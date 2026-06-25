@@ -1236,7 +1236,7 @@ wheels = [
 [[package]]
 name = "research-paper-intelligence"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "faiss-cpu" },
     { name = "numpy" },

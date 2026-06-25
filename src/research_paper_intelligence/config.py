@@ -2,7 +2,7 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -24,9 +24,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-# -----------------------------------------------------------------------------
-#   Application Settings
-# -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+    #   Application Settings
+    # -----------------------------------------------------------------------------
 
     app_name: str = "Research Paper Intelligence"
 
@@ -44,36 +44,36 @@ class Settings(BaseSettings):
         "CRITICAL",
     ] = "INFO"
 
-# -----------------------------------------------------------------------------
-#   Data and Generated Artifacts
-# -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+    #   Data and Generated Artifacts
+    # -----------------------------------------------------------------------------
 
     raw_papers_path: Path = PROJECT_ROOT / Path("data/raw/arXiv_papers.csv")
     processed_papers_path: Path = (
-        PROJECT_ROOT / Path("data/processed/arxiv_cleaned.csv")
+            PROJECT_ROOT / Path("data/processed/arxiv_cleaned.csv")
     )
     cluster_summary_papers_path: Path = (
-        PROJECT_ROOT / Path("data/processed/cluster_summary.csv")
+            PROJECT_ROOT / Path("data/processed/cluster_summary.csv")
     )
     papers_clustered_path: Path = (
-        PROJECT_ROOT / Path("data/processed/papers_clustered.csv")
+            PROJECT_ROOT / Path("data/processed/papers_clustered.csv")
     )
     faiss_paper_index: Path = (
-        PROJECT_ROOT / Path("data/artifacts/faiss_paper_index.bin")
+            PROJECT_ROOT / Path("data/artifacts/faiss_paper_index.bin")
     )
     paper_embeddings_path: Path = (
-        PROJECT_ROOT / Path("data/artifacts/paper_embeddings.npy")
+            PROJECT_ROOT / Path("data/artifacts/paper_embeddings.npy")
     )
 
-# -----------------------------------------------------------------------------
-#   Embeddings
-# -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+    #   Embeddings
+    # -----------------------------------------------------------------------------
 
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
 
-# -----------------------------------------------------------------------------
-#   Ollama
-# -----------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------
+    #   Ollama
+    # -----------------------------------------------------------------------------
 
     ollama_base_url: str = "http://localhost:11434"
     ollama_model = "llama3.2:3b"
@@ -85,12 +85,19 @@ class Settings(BaseSettings):
     ollama_batch_size: int = Field(
         default=10,
         gt=1,
-        description = "Number of clusters processed in each Ollama request."
+        description="Number of clusters processed in each Ollama request."
     )
     ollama_temperature: float | int = Field(
         default=0.1,
         gt=0.0,
         lt=2.0,
-        description = "Controls randomness in Ollama responses."
+        description="Controls randomness in Ollama responses."
     )
 
+
+@lru_cache
+def get_settings() -> Settings:
+    """
+    Returns the cached application settings.
+    """
+    return Settings()
