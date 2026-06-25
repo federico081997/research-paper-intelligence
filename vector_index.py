@@ -58,8 +58,8 @@ def main() -> None:
     project_root = Path(__file__).parent
 
     # Define input and output paths.
-    embeddings_path = project_root / "data" / "processed" / "paper_embeddings.npy"
-    index_path = project_root / "data" / "processed" / "faiss_paper_index.bin"
+    embeddings_path = project_root / "data" / "artifacts" / "paper_embeddings.npy"
+    index_path = project_root / "data" / "artifacts" / "faiss_paper_index.bin"
 
     # Load embeddings, build the index, and save it.
     embeddings = load_embeddings(embeddings_path)
