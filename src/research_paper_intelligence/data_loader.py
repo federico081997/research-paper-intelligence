@@ -9,8 +9,9 @@ REQUIRED_COLUMNS: frozenset[str] = frozenset(
         "title",
         "abstract",
         "category",
-        "published_date",
+        "authors",
         "combined_text",
+        "published_date",
     }
 )
 
@@ -39,14 +40,12 @@ def load_processed_data(path: Path | None = None) -> pd.DataFrame:
 
     # Ensure the processed dataset exists before loading
     if not path.exists():
-        raise FileNotFoundError(
-            f"Processed data not found at: {path}"
-        )
+        raise FileNotFoundError(f"Processed data not found at: {path}")
 
     # Load the processed dataset into a Pandas DataFrame
     df = pd.read_csv(path)
 
-    # Check if there are any missing columns in th dataset
+    # Check if there are any missing columns in the dataset
     missing_columns = REQUIRED_COLUMNS.difference(df.columns)
     if missing_columns:
         raise KeyError(
@@ -55,11 +54,6 @@ def load_processed_data(path: Path | None = None) -> pd.DataFrame:
         )
 
     # Ensure the published date column is in datetime format
-    try:
-        df["published_date"] = pd.to_datetime(df["published_date"])
-    except ValueError as exc:
-        raise ValueError(
-            "The 'published_date' column contains invalid date values."
-        ) from exc
+    df["published_date"] = pd.to_datetime(df["published_date"], errors="raise")
 
     return df

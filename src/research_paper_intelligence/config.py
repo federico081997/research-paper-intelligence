@@ -51,20 +51,20 @@ class Settings(BaseSettings):
     # -----------------------------------------------------------------------------
 
     raw_papers_path: Path = PROJECT_ROOT / Path("data/raw/arXiv_papers.csv")
-    processed_papers_path: Path = (
-            PROJECT_ROOT / Path("data/processed/arxiv_cleaned.csv")
+    processed_papers_path: Path = PROJECT_ROOT / Path(
+        "data/processed/arxiv_cleaned.csv"
     )
-    cluster_summary_papers_path: Path = (
-            PROJECT_ROOT / Path("data/processed/cluster_summary.csv")
+    cluster_summary_papers_path: Path = PROJECT_ROOT / Path(
+        "data/processed/cluster_summary.csv"
     )
-    papers_clustered_path: Path = (
-            PROJECT_ROOT / Path("data/processed/papers_clustered.csv")
+    papers_clustered_path: Path = PROJECT_ROOT / Path(
+        "data/processed/papers_clustered.csv"
     )
-    faiss_paper_index: Path = (
-            PROJECT_ROOT / Path("data/artifacts/faiss_paper_index.bin")
+    faiss_paper_index: Path = PROJECT_ROOT / Path(
+        "data/artifacts/faiss_paper_index.bin"
     )
-    paper_embeddings_path: Path = (
-            PROJECT_ROOT / Path("data/artifacts/paper_embeddings.npy")
+    paper_embeddings_path: Path = PROJECT_ROOT / Path(
+        "data/artifacts/paper_embeddings.npy"
     )
 
     # -----------------------------------------------------------------------------
@@ -78,22 +78,20 @@ class Settings(BaseSettings):
     # -----------------------------------------------------------------------------
 
     ollama_base_url: str = "http://localhost:11434"
-    ollama_model = "llama3.2:3b"
+    ollama_model: str = "llama3.2:3b"
     ollama_timeout_seconds: int = Field(
-        default=120,
-        gt=0,
-        description=" Ollama timeout in seconds"
+        default=120, gt=0, description=" Ollama timeout in seconds"
     )
     ollama_batch_size: int = Field(
         default=10,
         gt=1,
-        description="Number of clusters processed in each Ollama request."
+        description="Number of clusters processed in each Ollama request.",
     )
     ollama_temperature: float | int = Field(
         default=0.1,
         gt=0.0,
         lt=2.0,
-        description="Controls randomness in Ollama responses."
+        description="Controls randomness in Ollama responses.",
     )
 
 
