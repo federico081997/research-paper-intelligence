@@ -1,4 +1,6 @@
-# src/research_paper_intelligence/config.py
+"""
+Application configuration and environment-variable loading
+"""
 
 from functools import lru_cache
 from pathlib import Path
