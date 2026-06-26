@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from research_paper_intelligence.preprocessing import (
+from research_paper_intelligence.data.preprocessing import (
     REQUIRED_COLUMNS,
     clean_text,
     parse_authors,

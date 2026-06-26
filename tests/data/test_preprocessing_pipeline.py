@@ -7,7 +7,7 @@ from unittest.mock import Mock
 import pandas as pd
 import pytest
 
-from research_paper_intelligence import preprocessing_pipeline as script
+from research_paper_intelligence.data import preprocessing_pipeline as script
 
 
 def test_main_runs_preprocessing_pipeline(

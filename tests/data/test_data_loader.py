@@ -5,7 +5,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from research_paper_intelligence.data_loader import (
+from research_paper_intelligence.data.data_loader import (
     SETTINGS,
     load_data,
     save_to_csv,

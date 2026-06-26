@@ -1,8 +1,8 @@
 """Coordinate the research-paper processing pipeline."""
 
 from research_paper_intelligence.config import get_settings
-from research_paper_intelligence.data_loader import load_data, save_to_csv
-from research_paper_intelligence.preprocessing import preprocess_dataset
+from research_paper_intelligence.data.data_loader import load_data, save_to_csv
+from research_paper_intelligence.data.preprocessing import preprocess_dataset
 
 
 def run_preprocessing_pipeline() -> None:
