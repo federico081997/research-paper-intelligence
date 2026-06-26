@@ -6,7 +6,8 @@ from unittest.mock import Mock
 
 import pandas as pd
 import pytest
-from scripts import preprocess_dataset as script
+
+from research_paper_intelligence import preprocessing_pipeline as script
 
 
 def test_main_runs_preprocessing_pipeline(
@@ -42,7 +43,7 @@ def test_main_runs_preprocessing_pipeline(
     monkeypatch.setattr(script, "save_to_csv", mock_save_to_csv)
 
     # Run the main script
-    script.main()
+    script.run_preprocessing_pipeline()
 
     # Check whether the settings and load_data functions were only called once.
     mock_get_settings.assert_called_once_with()
