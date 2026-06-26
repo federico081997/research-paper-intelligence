@@ -27,6 +27,6 @@ htmlcov/
 *.sqlite3
 
 # Generated ML artifacts
-#data/artifacts/
-#data/processed/
-#models/*.pt
+data/artifacts/
+data/processed/
+models/*.pt

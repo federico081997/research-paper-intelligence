@@ -1,3 +1,7 @@
+"""
+Utilities for loading the data from the data folder.
+"""
+
 from pathlib import Path
 
 import pandas as pd
