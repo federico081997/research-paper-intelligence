@@ -30,7 +30,7 @@ def clean_text(text: object) -> str:
     Returns:
         A cleaned string. If the input is missing, it returns an empty string.
     """
-    # Check if the input text is null or scalar
+    # Check if the input text is null or scalar.
     if text is None or (is_scalar(text) and bool(pd.isna(cast(Any, text)))):
         return ""
 
@@ -50,13 +50,13 @@ def parse_authors(authors: object) -> str:
     if authors is None:
         return ""
 
-    # Handle lists and tuples before calling isna()
+    # Handle lists and tuples before calling isna().
     if isinstance(authors, (list, tuple)):
         return ", ".join(
             str(author).strip() for author in authors if str(author).strip()
         )
 
-    # Handle NaNs in the Dataframe
+    # Handle NaNs in the Dataframe.
     if bool(pd.isna(cast(Any, authors))):
         return ""
 
@@ -71,19 +71,19 @@ def parse_authors(authors: object) -> str:
         except (ValueError, SyntaxError):
             return stripped_authors
 
-        # Check if the string to tuple conversion has been successful
+        # Check if the string to tuple conversion has been successful.
         if isinstance(parsed_authors, (list, tuple)):
             return ", ".join(str(author).strip() for author in parsed_authors)
 
-        # Handle quoted Python strings
+        # Handle quoted Python strings.
         if isinstance(parsed_authors, str):
             return parsed_authors.strip()
 
-        # Preserve the original input
+        # Preserve the original input.
         return stripped_authors
 
     # Return the original input converted into a string if any of the above
-    # checks failed
+    # checks failed.
     return str(authors).strip()
 
 
@@ -95,10 +95,14 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
     Returns:
         A cleaned pandas DataFrame.
+
+    Raises:
+        KeyError: If the required columns are not present in the dataset.
+        ValueError: If a published date cannot be parsed.
     """
     df = df.copy()
 
-    # Check if there are any missing columns in the dataset
+    # Check if there are any missing columns in the dataset.
     missing_columns = REQUIRED_COLUMNS.difference(df.columns)
     if missing_columns:
         raise KeyError(
@@ -106,7 +110,7 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
             + ", ".join(missing_columns)
         )
 
-    # Keep only relevant columns
+    # Keep only relevant columns.
     df = df[list(REQUIRED_COLUMNS)]
 
     # Remove rows missing title or abstract, which are not useful for search.
@@ -115,10 +119,10 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     # Remove duplicate records based on 'title' and 'abstract'.
     df = df.drop_duplicates(subset=["title", "summary"]).reset_index(drop=True)
 
-    # Ensure the published date column is in datetime format
+    # Ensure the published date column is in datetime format.
     df["published_date"] = pd.to_datetime(df["published_date"], errors="raise")
 
-    # Clean text fields
+    # Clean text fields.
     df[["title", "category", "summary"]] = df[
         ["title", "category", "summary"]
     ].map(clean_text)

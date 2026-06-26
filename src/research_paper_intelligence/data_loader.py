@@ -33,8 +33,19 @@ def load_data(path: Path | None = None) -> pd.DataFrame:
     if not path:
         path = SETTINGS.processed_papers_path
 
-    # Ensure the dataset exists before loading
+    # Ensure the dataset exists before loading.
     if not path.exists():
         raise FileNotFoundError(f"Dataset not found at: {path}")
 
     return pd.read_csv(path)
+
+
+def save_to_csv(df: pd.DataFrame, path: Path) -> None:
+    """Save the DataFrame to disk in CSV format. .
+
+    Args:
+        df: Input DataFrame.
+        path: Path where to save the DataFrame.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(path, index=False)
