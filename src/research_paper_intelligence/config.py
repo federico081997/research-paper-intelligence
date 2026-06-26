@@ -1,6 +1,4 @@
-"""
-Application configuration and environment-variable loading
-"""
+"""Application configuration and environment-variable loading."""
 
 from functools import lru_cache
 from pathlib import Path
@@ -14,9 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    """
-    Validated configuration for the Research Paper Intelligence project.
-    """
+    """Validated configuration for the Research Paper Intelligence project."""
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -97,7 +93,5 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """
-    Returns the cached application settings.
-    """
+    """Returns the cached application settings."""
     return Settings()
