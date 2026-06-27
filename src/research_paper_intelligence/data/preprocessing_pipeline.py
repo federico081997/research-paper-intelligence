@@ -1,7 +1,6 @@
 """Coordinate the research-paper dataset preprocessing workflow."""
 
 import logging
-from time import perf_counter
 
 from research_paper_intelligence.config import Settings
 from research_paper_intelligence.data.data_loader import load_data, save_to_csv
@@ -12,9 +11,6 @@ logger = logging.getLogger(__name__)
 
 def run_preprocessing_pipeline(settings: Settings) -> None:
     """Run the research-paper preprocessing pipeline."""
-    start_time = perf_counter()
-
-    logger.info("Starting research-paper preprocessing pipeline")
     logger.debug("Raw dataset path: %s", settings.raw_papers_path)
     logger.debug(
         "Processed dataset path: %s",
@@ -50,8 +46,3 @@ def run_preprocessing_pipeline(settings: Settings) -> None:
         settings.processed_papers_path,
     )
     save_to_csv(processed_data, settings.processed_papers_path)
-
-    logger.info(
-        "Preprocessing pipeline completed successfully in %.2f seconds",
-        perf_counter() - start_time,
-    )

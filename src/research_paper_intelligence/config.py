@@ -1,6 +1,6 @@
 """Application configuration and environment-variable loading."""
 
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
 from typing import Literal
 
@@ -42,26 +42,40 @@ class Settings(BaseSettings):
         "CRITICAL",
     ] = "INFO"
 
+    device: Literal["cpu", "cuda", "auto"] = "auto"
+
     # -------------------------------------------------------------------------
     #   Data and Generated Artifacts
     # -------------------------------------------------------------------------
 
-    raw_papers_path: Path = PROJECT_ROOT / Path("data/raw/arXiv_papers.csv")
+    raw_papers_path: Path = PROJECT_ROOT / Path("data/raw/arxiv_papers.csv")
     processed_papers_path: Path = PROJECT_ROOT / Path(
         "data/processed/arxiv_cleaned.csv"
     )
-    cluster_summary_papers_path: Path = PROJECT_ROOT / Path(
+    cluster_summary_path: Path = PROJECT_ROOT / Path(
         "data/processed/cluster_summary.csv"
     )
     papers_clustered_path: Path = PROJECT_ROOT / Path(
         "data/processed/papers_clustered.csv"
     )
-    faiss_paper_index: Path = PROJECT_ROOT / Path(
+    faiss_paper_index_path: Path = PROJECT_ROOT / Path(
         "data/artifacts/faiss_paper_index.bin"
     )
     paper_embeddings_path: Path = PROJECT_ROOT / Path(
         "data/artifacts/paper_embeddings.npy"
     )
+
+    # -------------------------------------------------------------------------
+    #   HuggingFace Data and Generated Artifacts
+    # -------------------------------------------------------------------------
+
+    hf_repository: str = "Federico081997/research-paper-intelligence-data"
+    hf_raw_papers_file: str = "raw_data/arxiv_papers.csv"
+    hf_processed_papers_file: str = "processed_data/arxiv_cleaned.csv"
+    hf_cluster_summary_file: str = "processed_data/cluster_summary.csv"
+    hf_papers_clustered_file: str = "processed_data/papers_clustered.csv"
+    hf_faiss_paper_index_file: str = "artifacts/faiss_paper_index.bin"
+    hf_paper_embeddings_file: str = "artifacts/paper_embeddings.npy"
 
     # -------------------------------------------------------------------------
     #   Embeddings
@@ -91,7 +105,7 @@ class Settings(BaseSettings):
     )
 
 
-@lru_cache
+@cache
 def get_settings() -> Settings:
     """Returns the cached application settings."""
     return Settings()

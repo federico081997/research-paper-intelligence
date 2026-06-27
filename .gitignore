@@ -26,7 +26,5 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
-# Generated ML artifacts
-data/artifacts/
-data/processed/
-models/*.pt
+# Data required by the application
+data/

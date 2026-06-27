@@ -56,7 +56,7 @@ def parse_authors(authors: object) -> str:
             str(author).strip() for author in authors if str(author).strip()
         )
 
-    # Handle NaNs in the Dataframe.
+    # Handle Nans in the Dataframe.
     if bool(pd.isna(cast(Any, authors))):
         return ""
 
