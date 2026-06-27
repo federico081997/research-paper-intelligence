@@ -120,7 +120,9 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     df = df.drop_duplicates(subset=["title", "summary"]).reset_index(drop=True)
 
     # Ensure the published date column is in datetime format.
-    df["published_date"] = pd.to_datetime(df["published_date"], errors="raise")
+    df["published_date"] = pd.to_datetime(
+        df["published_date"], format="mixed", errors="raise"
+    )
 
     # Clean text fields.
     df[["title", "category", "summary"]] = df[
