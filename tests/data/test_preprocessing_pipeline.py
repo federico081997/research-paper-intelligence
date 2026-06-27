@@ -1,12 +1,12 @@
 """Tests performed on the ```preprocess_dataset`` script."""
 
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pandas as pd
 import pytest
 
+from research_paper_intelligence.config import Settings
 from research_paper_intelligence.data import preprocessing_pipeline as script
 
 
@@ -22,18 +22,16 @@ def test_main_runs_preprocessing_pipeline(
         processed_df["title"] + " " + processed_df["summary"]
     )
 
-    settings = SimpleNamespace(
+    settings = Settings(
         raw_papers_path=Path("data/raw/papers.csv"),
         processed_papers_path=Path("data/processed/papers.csv"),
     )
 
     # Replaces the real functions with mock functions
-    mock_get_settings = Mock(return_value=settings)
     mock_load_data = Mock(return_value=raw_df)
     mock_preprocess_dataset = Mock(return_value=processed_df)
     mock_save_to_csv = Mock()
 
-    monkeypatch.setattr(script, "get_settings", mock_get_settings)
     monkeypatch.setattr(script, "load_data", mock_load_data)
     monkeypatch.setattr(
         script,
@@ -43,10 +41,9 @@ def test_main_runs_preprocessing_pipeline(
     monkeypatch.setattr(script, "save_to_csv", mock_save_to_csv)
 
     # Run the main script
-    script.run_preprocessing_pipeline()
+    script.run_preprocessing_pipeline(settings)
 
-    # Check whether the settings and load_data functions were only called once.
-    mock_get_settings.assert_called_once_with()
+    # Check whether the load_data function was only called once.
     mock_load_data.assert_called_once_with(settings.raw_papers_path)
 
     # Check that the DataFrame loaded by load_data was passed to preprocessing.
