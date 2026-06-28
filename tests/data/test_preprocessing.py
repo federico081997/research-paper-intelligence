@@ -1,4 +1,4 @@
-"""Tests performed on the ``preprocessing`` module."""
+"""Tests performed on the "preprocessing" module."""
 
 from pathlib import Path
 
@@ -18,7 +18,7 @@ from research_paper_intelligence.data.preprocessing import (
 
 
 class TestCleanText:
-    """Tests performed on the ``clean_text`` function."""
+    """Tests performed on the "clean_text" function."""
 
     @pytest.mark.parametrize(
         ("input_text", "expected"),
@@ -48,7 +48,7 @@ class TestCleanText:
         input_text: str,
         expected: str,
     ) -> None:
-        """Normalize leading, trailing and repeated whitespace."""
+        """Normalize leading, trailing, and repeated whitespace."""
         result = clean_text(input_text)
 
         assert result == expected

@@ -36,3 +36,18 @@ def sample_dataframe() -> pd.DataFrame:
             "published_date": ["2025-01-10", "2025-02-15"],
         }
     )
+
+
+@pytest.fixture
+def sample_processed_dataframe() -> pd.DataFrame:
+    """Create a processed sample dataframe for embedding pipeline tests."""
+    return pd.DataFrame(
+        {
+            "title": ["Paper A", "Paper B"],
+            "summary": ["Summary A", "Summary B"],
+            "category": ["Category A", "Category B"],
+            "authors": ["Author A", "Author B"],
+            "published_date": ["2025-01-10", "2025-02-15"],
+            "combined_text": ["Paper A Summary A", "Paper B Summary B"],
+        }
+    )

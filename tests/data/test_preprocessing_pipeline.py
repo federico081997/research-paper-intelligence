@@ -1,4 +1,4 @@
-"""Tests performed on the ```preprocess_dataset`` script."""
+"""Tests performed on the "preprocessing_pipeline" script."""
 
 from pathlib import Path
 from unittest.mock import Mock
@@ -9,48 +9,55 @@ import pytest
 from research_paper_intelligence.config import Settings
 from research_paper_intelligence.data import preprocessing_pipeline as script
 
+# -----------------------------------------------------------------------------
+#   RunPreprocessingPipeline
+# -----------------------------------------------------------------------------
 
-def test_main_runs_preprocessing_pipeline(
-    monkeypatch: pytest.MonkeyPatch,
-    sample_dataframe: pd.DataFrame,
-) -> None:
-    """Run the loading, preprocessing, and saving steps in order."""
-    raw_df = sample_dataframe.copy(deep=True)
+class TestRunPreprocessingPipeline:
+    """Test the run_preprocessing_pipeline function."""
 
-    processed_df = sample_dataframe.copy(deep=True)
-    processed_df["combined_text"] = (
-        processed_df["title"] + " " + processed_df["summary"]
-    )
+    def test_main_runs_preprocessing_pipeline(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        sample_dataframe: pd.DataFrame,
+    ) -> None:
+        """Run the loading, preprocessing, and saving steps in order."""
+        raw_df = sample_dataframe.copy(deep=True)
 
-    settings = Settings(
-        raw_papers_path=Path("data/raw/papers.csv"),
-        processed_papers_path=Path("data/processed/papers.csv"),
-    )
+        processed_df = sample_dataframe.copy(deep=True)
+        processed_df["combined_text"] = (
+            processed_df["title"] + " " + processed_df["summary"]
+        )
 
-    # Replaces the real functions with mock functions
-    mock_load_data = Mock(return_value=raw_df)
-    mock_preprocess_dataset = Mock(return_value=processed_df)
-    mock_save_to_csv = Mock()
+        settings = Settings(
+            raw_papers_path=Path("data/raw/papers.csv"),
+            processed_papers_path=Path("data/processed/papers.csv"),
+        )
 
-    monkeypatch.setattr(script, "load_data", mock_load_data)
-    monkeypatch.setattr(
-        script,
-        "preprocess_dataset",
-        mock_preprocess_dataset,
-    )
-    monkeypatch.setattr(script, "save_to_csv", mock_save_to_csv)
+        # Replaces the real functions with mock functions
+        mock_load_data = Mock(return_value=raw_df)
+        mock_preprocess_dataset = Mock(return_value=processed_df)
+        mock_save_to_csv = Mock()
 
-    # Run the main script
-    script.run_preprocessing_pipeline(settings)
+        monkeypatch.setattr(script, "load_data", mock_load_data)
+        monkeypatch.setattr(
+            script,
+            "preprocess_dataset",
+            mock_preprocess_dataset,
+        )
+        monkeypatch.setattr(script, "save_to_csv", mock_save_to_csv)
 
-    # Check whether the load_data function was only called once.
-    mock_load_data.assert_called_once_with(settings.raw_papers_path)
+        # Run the main script
+        script.run_preprocessing_pipeline(settings)
 
-    # Check that the DataFrame loaded by load_data was passed to preprocessing.
-    preprocessing_argument = mock_preprocess_dataset.call_args.args[0]
-    assert preprocessing_argument is raw_df
+        # Check whether the load_data function was only called once.
+        mock_load_data.assert_called_once_with(settings.raw_papers_path)
 
-    # Check that the processed result was saved to the correct path.
-    saved_df, saved_path = mock_save_to_csv.call_args.args
-    assert saved_df is processed_df
-    assert saved_path == settings.processed_papers_path
+        # Check that the DataFrame loaded by load_data was passed to preprocessing.
+        preprocessing_argument = mock_preprocess_dataset.call_args.args[0]
+        assert preprocessing_argument is raw_df
+
+        # Check that the processed result was saved to the correct path.
+        saved_df, saved_path = mock_save_to_csv.call_args.args
+        assert saved_df is processed_df
+        assert saved_path == settings.processed_papers_path

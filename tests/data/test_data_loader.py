@@ -1,4 +1,4 @@
-"""Tests performed on the ``data loader`` module."""
+"""Tests performed on the "data loader" module."""
 
 from pathlib import Path
 
