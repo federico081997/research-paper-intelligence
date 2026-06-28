@@ -82,6 +82,7 @@ class Settings(BaseSettings):
     # -------------------------------------------------------------------------
 
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_batch_size: int = 32
 
     # -------------------------------------------------------------------------
     #   Ollama
