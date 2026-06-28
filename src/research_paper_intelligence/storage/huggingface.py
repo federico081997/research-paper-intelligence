@@ -5,6 +5,7 @@ import shutil
 from pathlib import Path
 
 from huggingface_hub import hf_hub_download
+from huggingface_hub.errors import RemoteEntryNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,8 @@ def download_file(
     remote_filename: str,
     destination: Path,
     force: bool = False,
-) -> Path:
+    missing_ok: bool = False,
+) -> Path | None:
     """Download a dataset file to its configured local location.
 
     Args:
@@ -22,32 +24,57 @@ def download_file(
         remote_filename: File path inside the remote repository.
         destination: Local path where the file should be stored.
         force: Replace the local file when it already exists.
+        missing_ok: Return None when the remote file does not exist.
 
     Returns:
-        Path to the downloaded local file.
+        Path to the local file, or None when the remote file is missing
+        and missing_ok is True.
+
+    Raises:
+        RemoteEntryNotFoundError: If the remote file does not exist and
+            missing_ok is False.
     """
     if destination.exists() and not force:
-        logger.debug("Dataset already exists at %s", destination)
+        logger.info(
+            "%s already exists at %s, skipping...",
+            remote_filename,
+            destination,
+        )
         return destination
 
     logger.info(
-        "Downloading %s from %s",
+        "Downloading %s from %s...",
         remote_filename,
         repository_id,
     )
 
-    cached_path = Path(
-        hf_hub_download(
-            repo_id=repository_id,
-            filename=remote_filename,
-            repo_type="dataset",
-            force_download=force,
+    try:
+        cached_path = Path(
+            hf_hub_download(
+                repo_id=repository_id,
+                filename=remote_filename,
+                repo_type="dataset",
+                force_download=force,
+            )
         )
-    )
+    except RemoteEntryNotFoundError:
+        if not missing_ok:
+            raise
+
+        logger.info(
+            "%s was not found in repository %s.",
+            remote_filename,
+            repository_id,
+        )
+        return None
 
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(cached_path, destination)
 
-    logger.info("Dataset saved to %s", destination)
+    logger.info(
+        "%s has been successfully saved to %s.",
+        remote_filename,
+        destination,
+    )
 
     return destination
