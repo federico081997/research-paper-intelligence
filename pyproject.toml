@@ -17,6 +17,7 @@ dependencies = [
 [project.scripts]
 preprocess-papers = "research_paper_intelligence.cli.preprocess_dataset:main"
 generate-embeddings = "research_paper_intelligence.cli.generate_embeddings:main"
+generate-faiss-index = "research_paper_intelligence.cli.generate_faiss_index:main"
 
 [dependency-groups]
 dev = [

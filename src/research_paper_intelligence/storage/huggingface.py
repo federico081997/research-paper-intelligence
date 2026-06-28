@@ -35,15 +35,15 @@ def download_file(
             missing_ok is False.
     """
     if destination.exists() and not force:
-        logger.info(
-            "%s already exists at %s, skipping...",
+        logger.debug(
+            "Using existing local file %s.",
             remote_filename,
             destination,
         )
         return destination
 
     logger.info(
-        "Downloading %s from %s...",
+        "Downloading %s from repository %s.",
         remote_filename,
         repository_id,
     )
@@ -61,8 +61,8 @@ def download_file(
         if not missing_ok:
             raise
 
-        logger.info(
-            "%s was not found in repository %s.",
+        logger.debug(
+            "Optional remote file %s was not found in repository %s.",
             remote_filename,
             repository_id,
         )

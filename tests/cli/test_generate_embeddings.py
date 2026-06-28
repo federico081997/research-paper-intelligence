@@ -8,6 +8,10 @@ import pytest
 
 from research_paper_intelligence.cli import generate_embeddings as script
 
+# -----------------------------------------------------------------------------
+#   TestGenerateEmbeddingsScript
+# -----------------------------------------------------------------------------
+
 
 class TestGenerateEmbeddingsScript:
     """Tests for the embedding-generation entry point."""

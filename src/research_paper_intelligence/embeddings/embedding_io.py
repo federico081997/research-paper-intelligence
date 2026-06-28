@@ -22,7 +22,7 @@ def save_embeddings(
 
 
 def load_embeddings(path: Path) -> NDArray[np.float32]:
-    """Load an embedding matrix from disk.
+    """Load an embedding matrix from a file.
 
     Args:
         path: Path containing the saved embedding matrix.

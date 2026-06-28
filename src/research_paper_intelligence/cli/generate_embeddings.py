@@ -20,6 +20,8 @@ def main() -> None:
     settings = get_settings()
     configure_logging(settings)
 
+    logger.info("Preparing paper embeddings.")
+
     embeddings_path = download_file(
         repository_id=settings.hf_repository,
         remote_filename=settings.hf_paper_embeddings_file,
@@ -29,8 +31,8 @@ def main() -> None:
 
     if embeddings_path is None:
         logger.info(
-            "Precomputed embeddings were not found. "
-            "Downloading processed papers and generating embeddings."
+            "Precomputed paper embeddings are unavailable. "
+            "Generating them locally from the processed papers."
         )
 
         download_file(
@@ -39,15 +41,25 @@ def main() -> None:
             destination=settings.processed_papers_path,
         )
 
+        logger.info(
+            "Generating paper embeddings from %s.",
+            settings.processed_papers_path,
+        )
+
         run_embedding_pipeline(settings)
+
+        logger.info(
+            "Paper embeddings were generated and saved to %s.",
+            settings.paper_embeddings_path,
+        )
     else:
         logger.info(
-            "Using precomputed embeddings at %s.",
+            "Using the existing paper embeddings at %s.",
             embeddings_path,
         )
 
     logger.info(
-        "Embedding preparation completed successfully in %.2f seconds.",
+        "Paper embedding preparation completed successfully in %.2f seconds.",
         perf_counter() - start_time,
     )
 

@@ -9,7 +9,7 @@ import pytest
 from research_paper_intelligence.cli import preprocess_dataset as script
 
 # -----------------------------------------------------------------------------
-#   TestPreprocessDataset
+#   TestPreprocessDatasetScript
 # -----------------------------------------------------------------------------
 
 
@@ -25,6 +25,7 @@ class TestPreprocessDatasetScript:
             hf_repository="test/repository",
             hf_raw_papers_file="raw/papers.csv",
             raw_papers_path=Path("data/raw/papers.csv"),
+            processed_papers_path=Path("data/processed/papers.csv"),
         )
 
         mock_get_settings = Mock(return_value=settings)
@@ -59,7 +60,3 @@ class TestPreprocessDatasetScript:
             destination=Path("data/raw/papers.csv"),
         )
         mock_run_pipeline.assert_called_once_with(settings)
-        mock_logger.info.assert_called_once_with(
-            "Preprocessing pipeline completed successfully in %.2f seconds.",
-            2.5,
-        )

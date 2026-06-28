@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     papers_clustered_path: Path = PROJECT_ROOT / Path(
         "data/processed/papers_clustered.csv"
     )
-    faiss_paper_index_path: Path = PROJECT_ROOT / Path(
+    faiss_index_papers_path: Path = PROJECT_ROOT / Path(
         "data/artifacts/faiss_paper_index.bin"
     )
     paper_embeddings_path: Path = PROJECT_ROOT / Path(
@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     hf_processed_papers_file: str = "processed_data/arxiv_cleaned.csv"
     hf_cluster_summary_file: str = "processed_data/cluster_summary.csv"
     hf_papers_clustered_file: str = "processed_data/papers_clustered.csv"
-    hf_faiss_paper_index_file: str = "artifacts/faiss_paper_index.bin"
+    hf_faiss_index_papers_file: str = "artifacts/faiss_paper_index.bin"
     hf_paper_embeddings_file: str = "artifacts/paper_embeddings.npy"
 
     # -------------------------------------------------------------------------

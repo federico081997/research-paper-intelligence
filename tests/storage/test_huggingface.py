@@ -77,6 +77,7 @@ class TestDownloadFile:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Function returns None when missing is allowed."""
+
         class FakeRemoteEntryNotFoundError(Exception):
             pass
 
@@ -106,6 +107,7 @@ class TestDownloadFile:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """Function raises when missing is not allowed."""
+
         class FakeRemoteEntryNotFoundError(Exception):
             pass
 

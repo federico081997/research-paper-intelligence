@@ -20,16 +20,28 @@ def main() -> None:
     settings = get_settings()
     configure_logging(settings)
 
+    logger.info("Preparing processed research-paper data.")
+
     download_file(
         repository_id=settings.hf_repository,
         remote_filename=settings.hf_raw_papers_file,
         destination=settings.raw_papers_path,
     )
 
+    logger.info(
+        "Preprocessing raw papers from %s.",
+        settings.raw_papers_path,
+    )
+
     run_preprocessing_pipeline(settings)
 
     logger.info(
-        "Preprocessing pipeline completed successfully in %.2f seconds.",
+        "Processed papers were saved to %s.",
+        settings.processed_papers_path,
+    )
+
+    logger.info(
+        "Research-paper preprocessing completed successfully in %.2f seconds.",
         perf_counter() - start_time,
     )
 

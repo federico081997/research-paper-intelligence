@@ -1,1 +1,1 @@
-"""Retrieval utilities for the application"""
+"""Retrieval utilities for the application."""
