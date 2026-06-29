@@ -6,14 +6,6 @@ import pandas as pd
 
 from research_paper_intelligence.config import get_settings
 
-REQUIRED_COLUMNS: set[str] = {
-    "title",
-    "abstract",
-    "category",
-    "authors",
-    "published_date",
-}
-
 SETTINGS = get_settings()
 
 
@@ -41,7 +33,7 @@ def load_data(path: Path | None = None) -> pd.DataFrame:
 
 
 def save_to_csv(df: pd.DataFrame, path: Path) -> None:
-    """Save the DataFrame to disk in CSV format. .
+    """Save the DataFrame to disk in CSV format.
 
     Args:
         df: Input DataFrame.

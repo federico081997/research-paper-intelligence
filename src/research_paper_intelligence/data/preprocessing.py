@@ -10,6 +10,7 @@ from research_paper_intelligence.config import get_settings
 
 REQUIRED_COLUMNS: frozenset[str] = frozenset(
     {
+        "id",
         "title",
         "summary",
         "category",
@@ -17,9 +18,6 @@ REQUIRED_COLUMNS: frozenset[str] = frozenset(
         "published_date",
     }
 )
-
-settings = get_settings()
-
 
 def clean_text(text: object) -> str:
     """Cleans the text, which removes extra and trailing whitespaces.
@@ -71,7 +69,7 @@ def parse_authors(authors: object) -> str:
         except (ValueError, SyntaxError):
             return stripped_authors
 
-        # Check if the string to tuple conversion has been successful.
+        # Check if the string-to-tuple conversion has been successful.
         if isinstance(parsed_authors, (list, tuple)):
             return ", ".join(str(author).strip() for author in parsed_authors)
 

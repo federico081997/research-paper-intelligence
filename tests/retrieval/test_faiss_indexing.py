@@ -7,6 +7,10 @@ from research_paper_intelligence.retrieval.faiss_index_builder import (
     build_faiss_index,
 )
 
+# -----------------------------------------------------------------------------
+#   TestBuildFaissIndex
+# -----------------------------------------------------------------------------
+
 
 class TestBuildFaissIndex:
     """Tests for build_faiss_index function."""
