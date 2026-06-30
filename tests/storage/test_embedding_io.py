@@ -5,7 +5,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from research_paper_intelligence.embeddings.embedding_io import (
+from research_paper_intelligence.storage.embedding_io import (
     load_embeddings,
     save_embeddings,
 )

@@ -14,6 +14,23 @@ from research_paper_intelligence.embeddings.embedding_pipeline import (
     extract_embedding_texts,
 )
 
+
+@pytest.fixture
+def sample_processed_dataframe() -> pd.DataFrame:
+    """Create a processed sample dataframe for embedding pipeline tests."""
+    return pd.DataFrame(
+        {
+            "id": ["c123", "b987"],
+            "title": ["Paper A", "Paper B"],
+            "summary": ["Summary A", "Summary B"],
+            "category": ["Category A", "Category B"],
+            "authors": ["Author A", "Author B"],
+            "published_date": ["2025-01-10", "2025-02-15"],
+            "combined_text": ["Paper A Summary A", "Paper B Summary B"],
+        }
+    )
+
+
 # -----------------------------------------------------------------------------
 #   TestExtractEmbeddingTexts
 # -----------------------------------------------------------------------------

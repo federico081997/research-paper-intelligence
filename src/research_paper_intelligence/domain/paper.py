@@ -1,7 +1,7 @@
 """Defines the domain model for a research paper, containing metadata."""
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date
 
 
 @dataclass(frozen=True)
@@ -13,4 +13,4 @@ class Paper:
     abstract: str
     authors: str
     category: str
-    published_date: datetime
+    published_date: date

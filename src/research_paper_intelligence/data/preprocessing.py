@@ -130,7 +130,4 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     # Convert authors into a readable string format.
     df["authors"] = df["authors"].apply(parse_authors)
 
-    # Create a combined text field for downstream semantic search tasks.
-    df["combined_text"] = df["title"] + " " + df["summary"]
-
     return df

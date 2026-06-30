@@ -12,3 +12,4 @@ class SearchResult:
     paper: Paper
     score: float
     rank: int
+    explanation: str

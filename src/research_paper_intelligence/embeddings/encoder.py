@@ -46,6 +46,7 @@ def generate_embeddings(
         texts,
         batch_size=batch_size,
         device=str(device),
+        normalize_embeddings=True,
         convert_to_numpy=True,
         show_progress_bar=True,
     )

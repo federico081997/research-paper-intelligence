@@ -61,6 +61,12 @@ class Settings(BaseSettings):
     faiss_index_papers_path: Path = PROJECT_ROOT / Path(
         "data/artifacts/faiss_paper_index.bin"
     )
+    tfidf_vectorizer_path: Path = PROJECT_ROOT / Path(
+        "data/artifacts/tfidf_vectorizer.joblib"
+    )
+    tfidf_matrix_path: Path = PROJECT_ROOT / Path(
+        "data/artifacts/tfidf_matrix.npz"
+    )
     paper_embeddings_path: Path = PROJECT_ROOT / Path(
         "data/artifacts/paper_embeddings.npy"
     )
@@ -75,6 +81,8 @@ class Settings(BaseSettings):
     hf_cluster_summary_file: str = "processed_data/cluster_summary.csv"
     hf_papers_clustered_file: str = "processed_data/papers_clustered.csv"
     hf_faiss_index_papers_file: str = "artifacts/faiss_paper_index.bin"
+    hf_tfidf_vectorizer_file: str = "artifacts/tfidf_vectorizer.joblib"
+    hf_tfidf_matrix_file: str = "artifacts/tfidf_matrix.npz"
     hf_paper_embeddings_file: str = "artifacts/paper_embeddings.npy"
 
     # -------------------------------------------------------------------------

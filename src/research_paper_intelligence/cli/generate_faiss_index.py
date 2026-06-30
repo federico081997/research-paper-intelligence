@@ -4,14 +4,14 @@ import logging
 from time import perf_counter
 
 from research_paper_intelligence.config import get_settings
-from research_paper_intelligence.embeddings.embedding_io import (
-    load_embeddings,
-)
 from research_paper_intelligence.logging_config import configure_logging
 from research_paper_intelligence.retrieval.faiss_index_builder import (
     build_faiss_index,
 )
-from research_paper_intelligence.retrieval.faiss_index_io import (
+from research_paper_intelligence.storage.embedding_io import (
+    load_embeddings,
+)
+from research_paper_intelligence.storage.faiss_index_io import (
     save_faiss_index,
 )
 from research_paper_intelligence.storage.huggingface import download_file
@@ -36,7 +36,7 @@ def main() -> None:
     )
 
     if faiss_index_path is None:
-        logger.info(
+        logger.warning(
             "A precomputed FAISS index is unavailable. "
             "Building the index locally from paper embeddings."
         )

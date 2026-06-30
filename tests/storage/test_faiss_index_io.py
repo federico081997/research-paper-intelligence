@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from research_paper_intelligence.retrieval import faiss_index_io
+from research_paper_intelligence.storage import faiss_index_io
 
 # -----------------------------------------------------------------------------
 #   TestLoadFaissIndex

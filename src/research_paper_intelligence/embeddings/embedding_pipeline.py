@@ -8,19 +8,19 @@ import pandas as pd
 from research_paper_intelligence.config import Settings
 from research_paper_intelligence.data.data_loader import load_data
 from research_paper_intelligence.device_config import get_device
-from research_paper_intelligence.embeddings.embedding_io import (
-    save_embeddings,
-)
 from research_paper_intelligence.embeddings.encoder import (
     generate_embeddings,
     get_model,
+)
+from research_paper_intelligence.storage.embedding_io import (
+    save_embeddings,
 )
 
 logger = logging.getLogger(__name__)
 
 
 def extract_embedding_texts(dataframe: pd.DataFrame) -> list[str]:
-    """Extract valid texts from the "combined_text" column.
+    """Extract valid texts which include the title and summary combined.
 
     Args:
         dataframe: Processed research-paper DataFrame.
@@ -32,20 +32,16 @@ def extract_embedding_texts(dataframe: pd.DataFrame) -> list[str]:
         KeyError: If the "combined_text" column is missing.
         ValueError: If the column contains missing or empty values.
     """
-    column_name = "combined_text"
+    if not {"title", "summary"}.issubset(dataframe.columns):
+        raise KeyError("Required columns are missing: title, summary.")
 
-    if column_name not in dataframe.columns:
-        raise KeyError(f"Required column is missing: {column_name}")
+    combined_text = (
+        dataframe["title"].fillna("").astype(str).str.strip()
+        + " "
+        + dataframe["summary"].fillna("").astype(str).str.strip()
+    ).str.strip()
 
-    if dataframe[column_name].isna().any():
-        raise ValueError(f"The {column_name} column contains missing values.")
-
-    texts = dataframe[column_name].astype(str).str.strip()
-
-    if texts.eq("").any():
-        raise ValueError(f"The {column_name} column contains empty values.")
-
-    return texts.tolist()
+    return combined_text.tolist()
 
 
 def run_embedding_pipeline(settings: Settings) -> Path:

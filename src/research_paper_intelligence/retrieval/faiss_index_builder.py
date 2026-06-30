@@ -13,7 +13,7 @@ def build_faiss_index(embeddings: np.ndarray) -> faiss.Index:
     Returns:
         The populated FAISS index.
     """
-    index = faiss.IndexFlatL2(embeddings.shape[1])
+    index = faiss.IndexFlatIP(embeddings.shape[1])
     index.add(embeddings)
 
     return index

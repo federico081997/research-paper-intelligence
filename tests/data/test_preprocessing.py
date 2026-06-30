@@ -485,17 +485,6 @@ class TestPreprocessDataset:
 
         assert result.loc[0, "authors"] == "Alice Smith, Bob Jones"
 
-    def test_creates_combined_text(
-        self,
-        valid_csv: Path,
-    ) -> None:
-        """Combine the cleaned title and summary for semantic search."""
-        dataframe = pd.read_csv(valid_csv)
-
-        result = preprocess_dataset(dataframe)
-
-        assert result.loc[0, "combined_text"] == ("Paper title Paper abstract")
-
     def test_removes_irrelevant_columns(
         self,
         valid_csv: Path,
@@ -507,6 +496,4 @@ class TestPreprocessDataset:
         result = preprocess_dataset(dataframe)
 
         assert "irrelevant_column" not in result.columns
-        assert set(result.columns) == (
-            set(REQUIRED_COLUMNS) | {"combined_text"}
-        )
+        assert set(result.columns) == set(REQUIRED_COLUMNS)

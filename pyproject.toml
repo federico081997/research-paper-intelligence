@@ -18,6 +18,7 @@ dependencies = [
 preprocess-papers = "research_paper_intelligence.cli.preprocess_dataset:main"
 generate-embeddings = "research_paper_intelligence.cli.generate_embeddings:main"
 generate-faiss-index = "research_paper_intelligence.cli.generate_faiss_index:main"
+generate-tfidf-index = "research_paper_intelligence.cli.generate_tfidf_index:main"
 
 [dependency-groups]
 dev = [
@@ -25,7 +26,8 @@ dev = [
     "pandas-stubs>=3.0.3.260530",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
-    "ruff>=0.15.19",
+    "ruff>=0.15.20",
+    "scipy-stubs>=1.18.0.0",
 ]
 
 [build-system]
@@ -111,4 +113,12 @@ warn_unused_ignores = true
 warn_redundant_casts = true
 warn_return_any = true
 no_implicit_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+    "sklearn.*",
+    "joblib",
+    "joblib.*"
+]
+ignore_missing_imports = true
 

@@ -43,7 +43,7 @@ def download_file(
         return destination
 
     logger.info(
-        "Downloading %s from repository %s.",
+        "Attempting to download %s from repository %s.",
         remote_filename,
         repository_id,
     )
@@ -61,8 +61,8 @@ def download_file(
         if not missing_ok:
             raise
 
-        logger.debug(
-            "Optional remote file %s was not found in repository %s.",
+        logger.info(
+            "Remote file %s was not found in repository %s.",
             remote_filename,
             repository_id,
         )
