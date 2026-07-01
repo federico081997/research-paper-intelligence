@@ -13,7 +13,7 @@ def calculate_tfidf_scores(
     query: str,
     vectorizer: TfidfVectorizer,
     matrix: csr_matrix,
-    candidate_positions: Sequence[int],
+    candidate_positions: Sequence[int] | NDArray[np.int64],
 ) -> NDArray[np.float64]:
     """Calculate TF-IDF scores for a query and a list of candidate positions.
 

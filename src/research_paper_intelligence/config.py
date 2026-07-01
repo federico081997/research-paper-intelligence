@@ -2,9 +2,10 @@
 
 from functools import cache
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import Field
+import numpy as np
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Main project path
@@ -91,6 +92,30 @@ class Settings(BaseSettings):
 
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_batch_size: int = 32
+
+    # -------------------------------------------------------------------------
+    #   Hybrid ranking
+    # -------------------------------------------------------------------------
+
+    candidate_top_k: int = Field(default=100, gt=1)
+    half_life_years: float = Field(default=5.0, gt=0.0)
+    semantic_weight: float = Field(default=0.65, ge=0.0, le=1.0)
+    tfidf_weight: float = Field(default=0.20, ge=0.0, le=1.0)
+    keyword_weight: float = Field(default=0.10, ge=0.0, le=1.0)
+    recency_weight: float = Field(default=0.05, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def validate_score_weights(self) -> Self:
+        """Score weights must sum to 1.0."""
+        total = (
+            self.semantic_weight
+            + self.tfidf_weight
+            + self.keyword_weight
+            + self.recency_weight
+        )
+        if not np.isclose(total, 1.0):
+            raise ValueError("Score weights must sum to 1.0.")
+        return self
 
     # -------------------------------------------------------------------------
     #   Ollama
