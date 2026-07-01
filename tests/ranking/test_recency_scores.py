@@ -1,12 +1,13 @@
 """Tests for recency-score calculation."""
 
 from datetime import date, timedelta
-
-import pytest
 from unittest.mock import Mock
 
+import numpy as np
+import pytest
+
 from research_paper_intelligence.domain.paper import Paper
-import research_paper_intelligence.ranking.recency_scores
+from research_paper_intelligence.ranking import recency_scores
 
 
 class TestCalculateRecencyScore:
@@ -58,11 +59,15 @@ class TestCalculateRecencyScore:
                 half_life_years=half_life_years,
             )
 
+
 class TestCalculateRecencyScores:
+    """Tests the calculation of recency scores."""
+
     def test_calculates_score_for_each_candidate(
         self,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        """Tests that it calculates scores for each candidate."""
         papers = [Mock(spec=Paper), Mock(spec=Paper)]
         papers[0].published_date = date(2025, 1, 1)
         papers[1].published_date = date(2020, 1, 1)
@@ -89,6 +94,7 @@ class TestCalculateRecencyScores:
         score_mock.assert_any_call(date(2020, 1, 1), 5.0)
 
     def test_returns_empty_array_for_no_candidates(self) -> None:
+        """Tests that it returns an empty array for no candidates."""
         result = recency_scores.calculate_recency_scores(
             candidate_papers=[],
             half_life_years=5.0,

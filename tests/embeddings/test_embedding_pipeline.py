@@ -1,7 +1,6 @@
 """Tests performed of the embedding pipeline."""
 
 from pathlib import Path
-from typing import Any
 from unittest.mock import Mock
 
 import numpy as np
@@ -26,7 +25,6 @@ def sample_processed_dataframe() -> pd.DataFrame:
             "category": ["Category A", "Category B"],
             "authors": ["Author A", "Author B"],
             "published_date": ["2025-01-10", "2025-02-15"],
-            "combined_text": ["Paper A Summary A", "Paper B Summary B"],
         }
     )
 
@@ -37,68 +35,54 @@ def sample_processed_dataframe() -> pd.DataFrame:
 
 
 class TestExtractEmbeddingTexts:
-    """Tests performed on the extract_embedding_texts function."""
+    """Tests for the extract_embedding_texts function."""
 
-    def test_extract_texts_as_list(
+    def test_combines_title_and_summary(
         self,
         sample_processed_dataframe: pd.DataFrame,
     ) -> None:
-        """Test that the function returns a list of strings."""
+        """Tests that the title and summary columns are combined."""
         result = extract_embedding_texts(sample_processed_dataframe)
 
-        assert isinstance(result, list)
-        assert result == ["Paper A Summary A", "Paper B Summary B"]
+        assert result == [
+            "Paper A Summary A",
+            "Paper B Summary B",
+        ]
 
-    def test_raise_error_if_missing_column(
-        self,
-        sample_processed_dataframe: pd.DataFrame,
-    ) -> None:
-        """Tests that a missing required column raises a KeyError."""
-        required_column = "combined_text"
-        sample_processed_dataframe = sample_processed_dataframe.drop(
-            columns=["combined_text"]
+    def test_handles_missing_values(self) -> None:
+        """Tests that missing values raise a ValueError."""
+        dataframe = pd.DataFrame(
+            {
+                "title": ["Paper A", None],
+                "summary": [None, "Summary B"],
+            }
         )
 
-        with pytest.raises(
-            KeyError, match=f"Required column is missing: {required_column}"
-        ):
-            extract_embedding_texts(sample_processed_dataframe)
+        result = extract_embedding_texts(dataframe)
 
-    @pytest.mark.parametrize("missing_value", [pd.NA, pd.NaT, np.nan, None])
-    def test_raise_error_if_column_contains_missing_values(
-        self,
-        sample_processed_dataframe: pd.DataFrame,
-        missing_value: Any,
-    ) -> None:
-        """Tests that missing values raise a ValueError."""
-        sample_processed_dataframe["combined_text"] = [
-            "Paper A Summary B",
-            missing_value,
+        assert result == [
+            "Paper A",
+            "Summary B",
         ]
 
-        with pytest.raises(
-            ValueError,
-            match="The combined_text column contains missing values.",
-        ):
-            extract_embedding_texts(sample_processed_dataframe)
-
-    def test_raise_error_if_column_contains_empty(
+    @pytest.mark.parametrize(
+        "dataframe",
+        [
+            pd.DataFrame({"title": ["Paper A"]}),
+            pd.DataFrame({"summary": ["Summary A"]}),
+            pd.DataFrame({"authors": ["Author A"]}),
+        ],
+    )
+    def test_raises_key_error_when_required_columns_are_missing(
         self,
-        sample_processed_dataframe: pd.DataFrame,
+        dataframe: pd.DataFrame,
     ) -> None:
-        """Tests that empty values raise a ValueError."""
-        column_name = "combined_text"
-
-        sample_processed_dataframe[column_name] = [
-            "Paper A Summary B",
-            "",
-        ]
-
+        """Tests that an error is raised when required columns are missing."""
         with pytest.raises(
-            ValueError,
-            match=f"The {column_name} column contains empty values.",
+            KeyError,
+            match="Required columns are missing: title, summary",
         ):
-            extract_embedding_texts(sample_processed_dataframe)
+            extract_embedding_texts(dataframe)
 
 
 # -----------------------------------------------------------------------------

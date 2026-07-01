@@ -27,6 +27,6 @@ class TestBuildFaissIndex:
 
         index = build_faiss_index(embeddings)
 
-        assert isinstance(index, faiss.IndexFlatL2)
+        assert isinstance(index, faiss.IndexFlatIP)
         assert index.d == embeddings.shape[1]
         assert index.ntotal == embeddings.shape[0]

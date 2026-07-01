@@ -1,10 +1,11 @@
 """Shared Pytest fixtures for the application."""
 
 from pathlib import Path
-from types import SimpleNamespace
 
 import pandas as pd
 import pytest
+
+from research_paper_intelligence.config import Settings
 
 
 @pytest.fixture
@@ -42,9 +43,9 @@ def sample_dataframe() -> pd.DataFrame:
 
 
 @pytest.fixture
-def simple_settings() -> SimpleNamespace:
+def simple_settings() -> Settings:
     """Create a simple settings configuration."""
-    settings = SimpleNamespace(
+    settings = Settings(
         hf_repository="user/research-papers",
         hf_tfidf_vectorizer_file="tfidf/vectorizer.joblib",
         hf_tfidf_matrix_file="tfidf/matrix.npz",
@@ -52,5 +53,9 @@ def simple_settings() -> SimpleNamespace:
         tfidf_vectorizer_path=Path("artifacts/vectorizer.joblib"),
         tfidf_matrix_path=Path("artifacts/matrix.npz"),
         processed_papers_path=Path("data/processed_papers.csv"),
+        semantic_weight=0.65,
+        tfidf_weight=0.20,
+        keyword_weight=0.10,
+        recency_weight=0.05,
     )
     return settings

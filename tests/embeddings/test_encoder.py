@@ -76,6 +76,7 @@ class TestGenerateEmbeddings:
             ["First paper", "Second paper"],
             batch_size=16,
             device="cpu",
+            normalize_embeddings=True,
             convert_to_numpy=True,
             show_progress_bar=True,
         )

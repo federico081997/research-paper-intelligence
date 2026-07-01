@@ -79,7 +79,6 @@ class TestGenerateTfidfIndex:
             "create_lexical_corpus",
             mock_corpus,
         )
-        monkeypatch.setattr(script, "tqdm", Mock(return_value=texts))
         monkeypatch.setattr(script, "build_tfidf_index", mock_build)
         monkeypatch.setattr(script, "save_tfidf_index", mock_save)
 
