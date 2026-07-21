@@ -10,7 +10,11 @@ class PaperRepository:
 
     def __init__(self, dataframe: pd.DataFrame):
         """Initializes the PaperRepository with the given dataframe."""
-        self._dataframe = dataframe.reset_index(drop=True)
+        self.dataframe = dataframe.reset_index(drop=True)
+
+    def __len__(self) -> int:
+        """Returns the total number of papers in the repository."""
+        return len(self.dataframe)
 
     def get_by_position(self, position: int) -> Paper:
         """Returns the paper at the given position.
@@ -18,7 +22,7 @@ class PaperRepository:
         Args:
             position: The position of the paper to return.
         """
-        row = self._dataframe.iloc[position]
+        row = self.dataframe.iloc[position]
 
         return Paper(
             paper_id=str(row["id"]),
@@ -37,7 +41,7 @@ class PaperRepository:
         Args:
             paper_id: The id of the paper to return.
         """
-        match = self._dataframe[self._dataframe["id"] == paper_id]
+        match = self.dataframe[self.dataframe["id"] == paper_id]
 
         if match.empty:
             return None
@@ -49,5 +53,5 @@ class PaperRepository:
         """Returns every paper in dataset order."""
         return [
             self.get_by_position(position)
-            for position in range(len(self._dataframe))
+            for position in range(len(self.dataframe))
         ]

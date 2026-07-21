@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "faiss-cpu>=1.14.3",
+    "fastapi[standard]>=0.138.2",
     "huggingface-hub>=1.20.1",
     "numpy>=2.5.0",
     "pandas>=3.0.3",
@@ -19,9 +20,12 @@ preprocess-papers = "research_paper_intelligence.cli.preprocess_dataset:main"
 generate-embeddings = "research_paper_intelligence.cli.generate_embeddings:main"
 generate-faiss-index = "research_paper_intelligence.cli.generate_faiss_index:main"
 generate-tfidf-index = "research_paper_intelligence.cli.generate_tfidf_index:main"
+run-api = "research_paper_intelligence.cli.run_api:main"
+run-app = "research_paper_intelligence.cli.run_app:main"
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.5.0",
     "mypy>=2.1.0",
     "pandas-stubs>=3.0.3.260530",
     "pytest>=9.1.1",

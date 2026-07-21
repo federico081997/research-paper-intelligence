@@ -41,8 +41,8 @@ class TestBuildExplanation:
     @pytest.mark.parametrize(
         ("tfidf_score", "expected_reason"),
         [
-            (0.75, "a high TF-IDF score"),
-            (0.50, "a moderate TF-IDF score"),
+            (0.75, "strong coverage of important query terms"),
+            (0.50, "moderate coverage of important query terms"),
         ],
     )
     def test_builds_tfidf_explanations_at_thresholds(
@@ -71,8 +71,8 @@ class TestBuildExplanation:
 
         assert result == (
             "Recommended because of very strong semantic similarity, "
-            "clear overlap in technical keywords, a moderate TF-IDF score, "
-            "and relatively recent publication."
+            "clear overlap in technical keywords, moderate coverage of "
+            "important query terms, and relatively recent publication."
         )
 
     def test_returns_fallback_when_no_threshold_is_reached(self) -> None:

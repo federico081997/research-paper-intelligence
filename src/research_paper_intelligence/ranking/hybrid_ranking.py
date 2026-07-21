@@ -60,9 +60,9 @@ def build_explanation(
 
     # Add a reason for TF-IDF scores
     if tfidf_score >= 0.75:
-        reasons.append("a high TF-IDF score")
+        reasons.append("strong coverage of important query terms")
     elif tfidf_score >= 0.50:
-        reasons.append("a moderate TF-IDF score")
+        reasons.append("moderate coverage of important query terms")
 
     # Add a reason if the paper is relatively recent.
     if recency_score >= 0.75:
@@ -185,7 +185,7 @@ def hybrid_search(
 
     for i in range(number_of_results):
         paper_index = int(ranked_indices[i])
-        semantic_score = float(normalized_semantic_scores[paper_index])
+        semantic_score = round(normalized_semantic_scores[paper_index])
         tfidf_score = float(tfidf_scores[paper_index])
         keyword_overlap_score = float(keyword_scores[paper_index])
         recency_score = float(recency_scores[paper_index])

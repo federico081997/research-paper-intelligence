@@ -99,8 +99,8 @@ class Settings(BaseSettings):
 
     candidate_top_k: int = Field(default=100, gt=1)
     half_life_years: float = Field(default=5.0, gt=0.0)
-    semantic_weight: float = Field(default=0.65, ge=0.0, le=1.0)
-    tfidf_weight: float = Field(default=0.20, ge=0.0, le=1.0)
+    semantic_weight: float = Field(default=0.75, ge=0.0, le=1.0)
+    tfidf_weight: float = Field(default=0.10, ge=0.0, le=1.0)
     keyword_weight: float = Field(default=0.10, ge=0.0, le=1.0)
     recency_weight: float = Field(default=0.05, ge=0.0, le=1.0)
 
@@ -116,6 +116,24 @@ class Settings(BaseSettings):
         if not np.isclose(total, 1.0):
             raise ValueError("Score weights must sum to 1.0.")
         return self
+
+    # -------------------------------------------------------------------------
+    #   FastAPI
+    # -------------------------------------------------------------------------
+
+    api_host: str = "127.0.0.1"
+    api_port: int = Field(default=8000, ge=1, le=63535)
+    api_reload: bool = True
+    api_timeout_seconds: float = Field(default=10.0, gt=0.0)
+
+    # -------------------------------------------------------------------------
+    #   Streamlit
+    # -------------------------------------------------------------------------
+
+    streamlit_host: str = "127.0.0.1"
+    streamlit_port: int = Field(default=8501, ge=1, le=63535)
+    streamlit_headless: bool = True
+    streamlit_run_on_save: bool = True
 
     # -------------------------------------------------------------------------
     #   Ollama

@@ -1,0 +1,46 @@
+[theme]
+base = "light"
+
+# Main brand/accent color
+primaryColor = "#2563EB"
+
+# Page colors
+backgroundColor = "#F8FAFC"
+secondaryBackgroundColor = "#EFF6FF"
+textColor = "#0F172A"
+
+# Links and borders
+linkColor = "#1D4ED8"
+borderColor = "#CBD5E1"
+dataframeBorderColor = "#CBD5E1"
+dataframeHeaderBackgroundColor = "#E0ECFF"
+
+# Shape and widget appearance
+baseRadius = "medium"
+buttonRadius = "medium"
+showWidgetBorder = true
+showSidebarBorder = true
+
+# Semantic colors
+blueColor = "#2563EB"
+greenColor = "#15803D"
+orangeColor = "#C2410C"
+redColor = "#DC2626"
+grayColor = "#64748B"
+
+# Plotly, Altair and Vega-Lite default series colors
+chartCategoricalColors = [
+    "#2563EB",
+    "#0891B2",
+    "#4F46E5",
+    "#0D9488",
+    "#7C3AED",
+    "#0284C7"
+]
+
+[theme.sidebar]
+primaryColor = "#2563EB"
+backgroundColor = "#F1F5F9"
+secondaryBackgroundColor = "#E0ECFF"
+textColor = "#0F172A"
+borderColor = "#CBD5E1"

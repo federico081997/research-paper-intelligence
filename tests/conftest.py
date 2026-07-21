@@ -1,11 +1,20 @@
 """Shared Pytest fixtures for the application."""
 
+from datetime import date
 from pathlib import Path
+from typing import cast
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
 
 from research_paper_intelligence.config import Settings
+from research_paper_intelligence.domain.search_result import (
+    SearchResult,
+)
+from research_paper_intelligence.services.search_service import (
+    SearchService,
+)
 
 
 @pytest.fixture
@@ -57,5 +66,37 @@ def simple_settings() -> Settings:
         tfidf_weight=0.20,
         keyword_weight=0.10,
         recency_weight=0.05,
+        half_life_years=5.0,
+        candidate_top_k=100,
     )
     return settings
+
+
+@pytest.fixture
+def search_result() -> SearchResult:
+    """Create a representative domain search result."""
+    paper = Mock()
+    paper.paper_id = "paper-001"
+    paper.title = "Finite volume methods"
+    paper.abstract = "An abstract about finite volume methods."
+    paper.authors = "Author One, Author Two"
+    paper.category = "Computational Engineering"
+    paper.published_date = date(2025, 1, 15)
+
+    result = Mock()
+    result.paper = paper
+    result.rank = 1
+    result.semantic_score = 0.91
+    result.tfidf_score = 0.72
+    result.keyword_overlap_score = 0.65
+    result.recency_score = 0.80
+    result.hybrid_score = 0.84
+    result.explanation = "Strong semantic similarity."
+
+    return cast(SearchResult, result)
+
+
+@pytest.fixture
+def search_service() -> Mock:
+    """Create a mocked search service."""
+    return Mock(spec=SearchService)
