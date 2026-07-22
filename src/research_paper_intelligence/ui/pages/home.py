@@ -8,13 +8,12 @@ from research_paper_intelligence.api.schemas.system import SystemInfoResponse
 from research_paper_intelligence.ui.api_clients.system_client import (
     get_system_info,
 )
-from research_paper_intelligence.ui.components.feature_cards import (
+from research_paper_intelligence.ui.components.cards import (
     render_feature_card,
 )
 from research_paper_intelligence.ui.navigation import (
     ASSISTANT_PAGE,
     SEARCH_PAGE,
-    COMPARISON_PAGE
 )
 
 
@@ -28,6 +27,7 @@ def render_hero() -> None:
         then analyse them with evidence-grounded AI workflows.
         """
     )
+
 
 def render_system_metrics(system_info: SystemInfoResponse) -> None:
     """Render the main system summary values.
@@ -151,7 +151,7 @@ def render_capabilities() -> None:
     """Render the main application capabilities."""
     st.subheader("What you can do")
 
-    search_column, assistant_column, comparison_column = st.columns(3)
+    search_column, assistant_column = st.columns(2)
 
     with search_column:
         render_feature_card(
@@ -164,7 +164,7 @@ def render_capabilities() -> None:
             ),
             status="Available",
             page=SEARCH_PAGE,
-            button_label="Search papers"
+            button_label="Search papers",
         )
 
     with assistant_column:
@@ -178,21 +178,7 @@ def render_capabilities() -> None:
             ),
             status="Planned",
             page=ASSISTANT_PAGE,
-            button_label="Ask questions"
-        )
-
-    with comparison_column:
-        render_feature_card(
-            key="paper-comparison",
-            title="Paper comparison",
-            icon=":material/compare_arrows:",
-            description=(
-                "Compare the objectives, methods, reported findings, "
-                "and key themes described in selected paper abstracts."
-            ),
-            status="Planned",
-            page=COMPARISON_PAGE,
-            button_label="Compare papers"
+            button_label="Ask questions",
         )
 
 

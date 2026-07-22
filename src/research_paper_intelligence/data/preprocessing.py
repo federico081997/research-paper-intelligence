@@ -2,6 +2,7 @@
 
 from ast import literal_eval
 from typing import Any, cast
+import re
 
 import pandas as pd
 from pandas.api.types import is_scalar
@@ -17,6 +18,14 @@ REQUIRED_COLUMNS: frozenset[str] = frozenset(
         "authors",
         "published_date",
     }
+)
+
+MODERN_ARXIV_ID_PATTERN = re.compile(
+    r"^\d{4}.\d{4,5}(?:v\d+)?$"
+)
+
+LEGACY_ARXIV_ID_PATTERN = re.compile(
+    r"^(?P<archive>.+)-(?P<number>\d{7}(?:v\d+)?)$"
 )
 
 def clean_text(text: object) -> str:
@@ -84,6 +93,51 @@ def parse_authors(authors: object) -> str:
     # checks failed.
     return str(authors).strip()
 
+def normalize_arxiv_id(paper_id: str) -> str:
+    """Convert a dataset paper ID into a valid arXiv identifier.
+
+    The dataset contains two formats:
+
+    - Modern IDs: ``abs-0901.4761v1``
+    - Legacy IDs: ``cs-9308101v1``
+
+    These are normalized to:
+
+    - ``0901.4761v1``
+    - ``cs/9308101v1``
+
+    Args:
+        paper_id: The paper identifier stored in the dataset.
+
+    Returns:
+        A valid arXiv identifier.
+
+    Raises:
+        ValueError: If the identifier is empty or has an unsupported format.
+    """
+    normalized_id = paper_id.strip()
+
+    if not normalized_id:
+        raise ValueError("paper_id must not be empty")
+
+    # Modern dataset format:
+    # abs-0901.4761v1 -> 0901.4761v1
+    normalized_id = normalized_id.removeprefix("abs-")
+
+    if MODERN_ARXIV_ID_PATTERN.fullmatch(normalized_id):
+        return normalized_id
+
+    # Legacy dataset format:
+    # cs-9308101v1 -> cs/9308101v1
+    match = LEGACY_ARXIV_ID_PATTERN.fullmatch(normalized_id)
+
+    if match is not None:
+        archive = match.group("archive")
+        number = match.group("number")
+        return f"{archive}/{number}"
+
+    raise ValueError(f"Unsupported arXiv paper ID format: {paper_id!r}")
+
 
 def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """Clean and preprocess the dataset with relevant columns.
@@ -96,7 +150,8 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
     Raises:
         KeyError: If the required columns are not present in the dataset.
-        ValueError: If a published date cannot be parsed.
+        ValueError: If a published date cannot be parsed of if the arXiv
+            format is invalid.
     """
     df = df.copy()
 
@@ -129,5 +184,8 @@ def preprocess_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
     # Convert authors into a readable string format.
     df["authors"] = df["authors"].apply(parse_authors)
+
+    # Normalize arXiv identifiers
+    df["id"] = df["id"].map(normalize_arxiv_id)
 
     return df
