@@ -1,6 +1,7 @@
 """Tests for application logging configuration."""
 
 import logging
+from typing import Literal
 from unittest.mock import Mock
 
 import pytest
@@ -35,8 +36,8 @@ class TestConfigureLogging:
     )
     def test_configure_logging(
         monkeypatch: pytest.MonkeyPatch,
-        environment: str,
-        log_level: str,
+        environment: Literal["development", "test", "production"],
+        log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         expected_format: str,
     ) -> None:
         """Configure the expected level and format."""

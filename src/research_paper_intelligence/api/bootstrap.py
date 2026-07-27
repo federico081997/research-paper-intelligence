@@ -1,10 +1,15 @@
 """Defines the bootstrap functions for the API."""
 
+from research_paper_intelligence.assistant.graph import create_assistant_graph
+from research_paper_intelligence.assistant.retrieval import AssistantRetriever
 from research_paper_intelligence.config import get_settings
 from research_paper_intelligence.data.data_loader import load_data
 from research_paper_intelligence.embeddings.encoder import get_model
 from research_paper_intelligence.repositories.paper_repository import (
     PaperRepository,
+)
+from research_paper_intelligence.services.assistant_service import (
+    ResearchAssistant,
 )
 from research_paper_intelligence.services.search_service import SearchService
 from research_paper_intelligence.storage.faiss_index_io import load_faiss_index
@@ -19,6 +24,9 @@ def create_search_service() -> SearchService:
     resources are then passed to the SearchService constructor.
 
     This function should normally be called once during API startup.
+
+    Returns:
+        The configured search service.
     """
     settings = get_settings()
 
@@ -38,3 +46,31 @@ def create_search_service() -> SearchService:
         tfidf_matrix=tfidf_matrix,
         settings=settings,
     )
+
+
+def create_assistant_service(
+    search_service: SearchService,
+) -> ResearchAssistant:
+    """Create and configure the research-paper assistant service.
+
+    Loads the application settings, builds the LangGraph state machine,
+    and initializes the application service wrapper.
+
+    This function should normally be called once during API startup.
+
+    Args:
+        search_service: The configured search service for retrieving papers.
+
+    Returns:
+        The configured research assistant service.
+    """
+    settings = get_settings()
+
+    # Build and compile the LangGraph
+    compiled_graph = create_assistant_graph(
+        settings=settings,
+        search_service=AssistantRetriever(search_service),
+    )
+
+    # Inject the graph into the application service class
+    return ResearchAssistant(graph=compiled_graph)

@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from research_paper_intelligence.api.lifespan import lifespan
 from research_paper_intelligence.api.routers import (
+    assistant_router,
     search_router,
     system_router,
 )
@@ -24,6 +25,9 @@ def create_app() -> FastAPI:
 
     # Add the Search router
     app.include_router(search_router.search_router, prefix="/api/v1")
+
+    # Add the assistant router
+    app.include_router(assistant_router.assistant_router, prefix="/api/v1")
 
     return app
 

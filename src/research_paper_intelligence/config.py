@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Literal, Self
 
 import numpy as np
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Main project path
@@ -125,6 +125,7 @@ class Settings(BaseSettings):
     api_port: int = Field(default=8000, ge=1, le=63535)
     api_reload: bool = True
     api_timeout_seconds: float = Field(default=10.0, gt=0.0)
+    api_assistant_timeout_seconds: float = Field(default=30.0, gt=0.0)
 
     # -------------------------------------------------------------------------
     #   Streamlit
@@ -136,28 +137,29 @@ class Settings(BaseSettings):
     streamlit_run_on_save: bool = True
 
     # -------------------------------------------------------------------------
-    #   Ollama
+    #   langchain models
     # -------------------------------------------------------------------------
 
-    ollama_base_url: str = "http://localhost:11434"
-    ollama_model: str = "llama3.2:3b"
-    ollama_timeout_seconds: int = Field(
-        default=120, gt=0, description=" Ollama timeout in seconds"
+    model_provider: Literal["google_genai"] = "google_genai"
+    model_name: str = "gemini-3.5-flash-lite"
+    google_api_key: SecretStr = Field(
+        validation_alias="GOOGLE_API_KEY",
+        description="Google AI Studio API key.",
     )
-    ollama_batch_size: int = Field(
-        default=10,
-        gt=1,
-        description="Number of clusters processed in each Ollama request.",
+
+    retrieval_k: int = Field(
+        default=5, ge=1, le=20, description="Number of papers to retrieve."
     )
-    ollama_temperature: float | int = Field(
-        default=0.1,
-        gt=0.0,
-        lt=2.0,
-        description="Controls randomness in Ollama responses.",
+    max_query_rewrites: int = Field(
+        default=2,
+        ge=0,
+        le=3,
+        description="Number of times to rewrite the query if unsuccessful.",
     )
 
 
 @cache
 def get_settings() -> Settings:
     """Returns the cached application settings."""
+    # noinspection PyArgumentList
     return Settings()

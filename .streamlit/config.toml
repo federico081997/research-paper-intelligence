@@ -28,16 +28,6 @@ orangeColor = "#C2410C"
 redColor = "#DC2626"
 grayColor = "#64748B"
 
-# Plotly, Altair and Vega-Lite default series colors
-chartCategoricalColors = [
-    "#2563EB",
-    "#0891B2",
-    "#4F46E5",
-    "#0D9488",
-    "#7C3AED",
-    "#0284C7"
-]
-
 [theme.sidebar]
 primaryColor = "#2563EB"
 backgroundColor = "#F1F5F9"
