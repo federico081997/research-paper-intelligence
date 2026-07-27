@@ -19,19 +19,20 @@ from research_paper_intelligence.services.search_service import (
 
 @pytest.fixture
 def valid_csv(tmp_path: Path) -> Path:
-    """Create a valid csv file path."""
-    csv_path = tmp_path / "dataset.csv"
-
-    pd.DataFrame(
+    """Create a valid research-paper CSV file."""
+    dataframe = pd.DataFrame(
         {
-            "id": ["c123"],
+            "id": ["abs-2401.12345"],
             "title": ["Paper title"],
             "summary": ["Paper abstract"],
             "category": ["Category"],
-            "authors": ["Author"],
-            "published_date": ["2025-01-10"],
+            "authors": ["['Author']"],
+            "published_date": ["2024-01-15"],
         }
-    ).to_csv(csv_path, index=False)
+    )
+
+    csv_path = tmp_path / "valid.csv"
+    dataframe.to_csv(csv_path, index=False)
 
     return csv_path
 

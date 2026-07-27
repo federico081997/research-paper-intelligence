@@ -324,8 +324,8 @@ class TestPreprocessDataset:
     """Tests for the preprocess_dataset function."""
 
     def test_preprocesses_valid_dataset(
-        self,
-        valid_csv: Path,
+            self,
+            valid_csv: Path,
     ) -> None:
         """Preprocess a valid research-paper dataset."""
         dataframe = pd.read_csv(valid_csv)
@@ -334,10 +334,15 @@ class TestPreprocessDataset:
 
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 1
-        assert result.loc[0, "title"] == "Paper title"
-        assert result.loc[0, "summary"] == "Paper abstract"
-        assert result.loc[0, "category"] == "Category"
-        assert result.loc[0, "authors"] == "Author"
+
+        paper = result.iloc[0]
+
+        assert paper["id"] == "2401.12345"
+        assert paper["title"] == "Paper title"
+        assert paper["summary"] == "Paper abstract"
+        assert paper["category"] == "Category"
+        assert paper["authors"] == "Author"
+        assert paper["published_date"] == pd.Timestamp("2024-01-15")
 
     def test_does_not_modify_original_dataframe(
         self,
@@ -377,15 +382,15 @@ class TestPreprocessDataset:
         ["title", "summary"],
     )
     def test_removes_rows_missing_search_text(
-        self,
-        valid_csv: Path,
-        missing_column: str,
+            self,
+            valid_csv: Path,
+            missing_column: str,
     ) -> None:
         """Remove rows missing a title or summary."""
         dataframe = pd.read_csv(valid_csv)
 
-        missing_row = dataframe.copy()
-        missing_row.loc[0, missing_column] = None
+        missing_row = dataframe.iloc[[0]].copy()
+        missing_row.loc[:, missing_column] = None
 
         dataframe = pd.concat(
             [dataframe, missing_row],
@@ -394,8 +399,8 @@ class TestPreprocessDataset:
 
         result = preprocess_dataset(dataframe)
 
-        assert len(result) == 1
-        assert result.loc[0, "title"] == "Paper title"
+        assert len(result) == len(dataframe) - 1
+        assert result.iloc[0]["title"] == "Paper title"
 
     def test_removes_duplicate_title_and_summary_pairs(
         self,
@@ -434,16 +439,20 @@ class TestPreprocessDataset:
         assert len(result) == 2
 
     def test_converts_published_date_to_datetime(
-        self,
-        valid_csv: Path,
+            self,
+            valid_csv: Path,
     ) -> None:
         """Convert publication dates to pandas datetime values."""
         dataframe = pd.read_csv(valid_csv)
 
         result = preprocess_dataset(dataframe)
 
-        assert pd.api.types.is_datetime64_any_dtype(result["published_date"])
-        assert result.loc[0, "published_date"] == pd.Timestamp("2025-01-10")
+        assert pd.api.types.is_datetime64_any_dtype(
+            result["published_date"]
+        )
+        assert result.loc[0, "published_date"] == pd.Timestamp(
+            "2024-01-15"
+        )
 
     def test_raises_value_error_for_invalid_published_date(
         self,

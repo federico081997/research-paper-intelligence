@@ -1,0 +1,127 @@
+services:
+  prepare-data:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    image: research-paper-intelligence:local
+
+    command:
+      - /app/src/research_paper_intelligence/cli/prepare_runtime_data.sh
+
+    env_file:
+      - .env
+
+    environment:
+      RPI_ENVIRONMENT: production
+      RPI_LOG_LEVEL: INFO
+      RPI_DEVICE: cpu
+
+    volumes:
+      - raw-data:/app/data/raw
+      - processed-data:/app/data/processed
+      - artifact-data:/app/data/artifacts
+      - huggingface-cache:/app/.cache/huggingface
+
+  api:
+    image: research-paper-intelligence:local
+
+    command:
+      - uvicorn
+      - research_paper_intelligence.api.app:fastapi_app
+      - --host
+      - "0.0.0.0"
+      - --port
+      - "8000"
+
+    env_file:
+      - .env
+
+    environment:
+      RPI_ENVIRONMENT: production
+      RPI_LOG_LEVEL: INFO
+      RPI_DEVICE: cpu
+      RPI_API_HOST: "0.0.0.0"
+      RPI_API_PORT: "8000"
+      RPI_API_RELOAD: "false"
+
+    ports:
+      - "8000:8000"
+
+    volumes:
+      - raw-data:/app/data/raw
+      - processed-data:/app/data/processed
+      - artifact-data:/app/data/artifacts
+      - huggingface-cache:/app/.cache/huggingface
+
+    depends_on:
+      prepare-data:
+        condition: service_completed_successfully
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3)"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
+
+    restart: unless-stopped
+
+  frontend:
+    image: research-paper-intelligence:local
+
+    command:
+      - streamlit
+      - run
+      - src/research_paper_intelligence/ui/streamlit_app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --server.runOnSave=false
+
+    env_file:
+      - .env
+
+    environment:
+      RPI_ENVIRONMENT: production
+      RPI_LOG_LEVEL: INFO
+      RPI_API_HOST: api
+      RPI_API_PORT: "8000"
+      RPI_STREAMLIT_HOST: "0.0.0.0"
+      RPI_STREAMLIT_PORT: "8501"
+      RPI_STREAMLIT_HEADLESS: "true"
+      RPI_STREAMLIT_RUN_ON_SAVE: "false"
+
+    ports:
+      - "8501:8501"
+
+    depends_on:
+      api:
+        condition: service_healthy
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501/_stcore/health', timeout=3)"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    restart: unless-stopped
+
+volumes:
+  raw-data:
+  processed-data:
+  artifact-data:
+  huggingface-cache:

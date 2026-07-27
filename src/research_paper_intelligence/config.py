@@ -79,8 +79,6 @@ class Settings(BaseSettings):
     hf_repository: str = "Federico081997/research-paper-intelligence-data"
     hf_raw_papers_file: str = "raw_data/arxiv_papers.csv"
     hf_processed_papers_file: str = "processed_data/arxiv_cleaned.csv"
-    hf_cluster_summary_file: str = "processed_data/cluster_summary.csv"
-    hf_papers_clustered_file: str = "processed_data/papers_clustered.csv"
     hf_faiss_index_papers_file: str = "artifacts/faiss_paper_index.bin"
     hf_tfidf_vectorizer_file: str = "artifacts/tfidf_vectorizer.joblib"
     hf_tfidf_matrix_file: str = "artifacts/tfidf_matrix.npz"
@@ -142,7 +140,8 @@ class Settings(BaseSettings):
 
     model_provider: Literal["google_genai"] = "google_genai"
     model_name: str = "gemini-3.5-flash-lite"
-    google_api_key: SecretStr = Field(
+    google_api_key: SecretStr | None = Field(
+        default=None,
         validation_alias="GOOGLE_API_KEY",
         description="Google AI Studio API key.",
     )

@@ -8,7 +8,7 @@ from langchain_core.language_models import (
 )
 from langchain_core.runnables import Runnable
 from langchain_google_genai import ChatGoogleGenerativeAI
-from pydantic import BaseModel
+from pydantic import BaseModel, SecretStr
 
 from research_paper_intelligence.config import Settings
 
@@ -16,6 +16,23 @@ StructuredOutputT = TypeVar(
     "StructuredOutputT",
     bound=BaseModel,
 )
+
+
+def require_google_api_key(settings: Settings) -> SecretStr:
+    """Return the configured Google API key or raise a clear error.
+
+    Args:
+        settings: the settings shared by the application.
+
+    Returns:
+        The configured Google API key.
+    """
+    if settings.google_api_key is None:
+        raise RuntimeError(
+            "GOOGLE_API_KEY is required to initialise the language model."
+        )
+
+    return settings.google_api_key
 
 
 def create_chat_model(settings: Settings) -> ChatGoogleGenerativeAI:
@@ -27,9 +44,11 @@ def create_chat_model(settings: Settings) -> ChatGoogleGenerativeAI:
     Returns:
         The base chat model.
     """
+    api_key = require_google_api_key(settings)
+
     return ChatGoogleGenerativeAI(
         model=settings.model_name,
-        api_key=settings.google_api_key.get_secret_value(),
+        api_key=api_key,
     )
 
 
