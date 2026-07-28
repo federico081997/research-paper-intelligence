@@ -66,14 +66,14 @@ def home_page(
     assistant_page = Mock(name="assistant_page")
 
     system_client_module = ModuleType(SYSTEM_CLIENT_MODULE)
-    system_client_module.get_system_info = get_system_info_mock
+    system_client_module.get_system_info = get_system_info_mock  # type: ignore[attr-defined]
 
     cards_module = ModuleType(CARDS_MODULE)
-    cards_module.render_feature_card = render_feature_card_mock
+    cards_module.render_feature_card = render_feature_card_mock  # type: ignore[attr-defined]
 
     navigation_module = ModuleType(NAVIGATION_MODULE)
-    navigation_module.SEARCH_PAGE = search_page
-    navigation_module.ASSISTANT_PAGE = assistant_page
+    navigation_module.SEARCH_PAGE = search_page  # type: ignore[attr-defined]
+    navigation_module.ASSISTANT_PAGE = assistant_page  # type: ignore[attr-defined]
 
     monkeypatch.setitem(
         sys.modules,

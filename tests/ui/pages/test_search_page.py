@@ -64,10 +64,10 @@ def search_page(
     render_result_list_card_mock = Mock()
 
     search_client_module = ModuleType(SEARCH_CLIENT_MODULE)
-    search_client_module.search_papers = search_papers_mock
+    search_client_module.search_papers = search_papers_mock  # type: ignore[attr-defined]
 
     cards_module = ModuleType(CARDS_MODULE)
-    cards_module.render_result_list_card = render_result_list_card_mock
+    cards_module.render_result_list_card = render_result_list_card_mock  # type: ignore[attr-defined]
 
     monkeypatch.setitem(
         sys.modules,

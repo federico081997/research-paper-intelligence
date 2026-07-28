@@ -51,10 +51,10 @@ def streamlit_app(
     navigation_mock = Mock(return_value=selected_page)
 
     navigation_module = ModuleType(NAVIGATION_MODULE)
-    navigation_module.PAGES = pages
+    navigation_module.PAGES = pages  # type: ignore[attr-defined]
 
     styles_module = ModuleType(STYLES_MODULE)
-    styles_module.apply_app_styles = apply_app_styles_mock
+    styles_module.apply_app_styles = apply_app_styles_mock  # type: ignore[attr-defined]
 
     monkeypatch.setitem(
         sys.modules,
