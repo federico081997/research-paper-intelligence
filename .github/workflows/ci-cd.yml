@@ -8,7 +8,6 @@ on:
   push:
     branches:
       - main
-
     tags:
       - "v*.*.*"
 
@@ -21,10 +20,15 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 env:
   PYTHON_VERSION: "3.12"
   UV_VERSION: "0.11.32"
-  TEST_IMAGE: research-paper-intelligence:test
+  TEST_IMAGE: "research-paper-intelligence:test"
+  DOCKER_CACHE_SCOPE: "research-paper-intelligence"
 
 jobs:
   quality:
@@ -34,20 +38,22 @@ jobs:
     timeout-minutes: 30
 
     env:
-      GOOGLE_API_KEY: test-google-api-key
-
-      RPI_ENVIRONMENT: test
-      RPI_LOG_LEVEL: INFO
-      RPI_DEVICE: cpu
+      GOOGLE_API_KEY: "test-google-api-key"
+      RPI_ENVIRONMENT: "test"
+      RPI_LOG_LEVEL: "INFO"
+      RPI_DEVICE: "cpu"
       RPI_API_RELOAD: "false"
+      RPI_STREAMLIT_HEADLESS: "true"
       RPI_STREAMLIT_RUN_ON_SAVE: "false"
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v7.0.0
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -56,7 +62,7 @@ jobs:
         with:
           version: ${{ env.UV_VERSION }}
           enable-cache: true
-          cache-dependency-glob: uv.lock
+          cache-dependency-glob: "uv.lock"
 
       - name: Verify lock file
         run: uv lock --check
@@ -71,20 +77,23 @@ jobs:
         run: uv run ruff check .
 
       - name: Run mypy
-        run: uv run mypy src
+        run: uv run mypy
 
       - name: Run tests
         run: |
           uv run pytest \
-            --junitxml=test-results.xml
+            --junitxml=test-results.xml \
+            --cov-report=xml:coverage.xml
 
-      - name: Upload test results
+      - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7
         with:
           name: pytest-results
-          path: test-results.xml
-          if-no-files-found: error
+          path: |
+            test-results.xml
+            coverage.xml
+          if-no-files-found: warn
           retention-days: 14
 
   docker:
@@ -101,10 +110,11 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Create CI environment file
-        shell: bash
         run: |
           cat > .env <<'EOF'
           GOOGLE_API_KEY=test-google-api-key
@@ -112,76 +122,95 @@ jobs:
           RPI_LOG_LEVEL=INFO
           RPI_DEVICE=cpu
           RPI_API_RELOAD=false
+          RPI_STREAMLIT_HEADLESS=true
           RPI_STREAMLIT_RUN_ON_SAVE=false
           EOF
+
+          chmod 600 .env
 
       - name: Validate Docker Compose configuration
         run: docker compose config --quiet
 
       - name: Set up Docker BuildX
-        uses: docker/setup-buildx-action@v4.2.0
+        uses: docker/setup-buildx-action@v4
 
       - name: Build test image
-        uses: docker/build-push-action@v7.3.0
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64
           load: true
           push: false
           tags: ${{ env.TEST_IMAGE }}
-          cache-from: type=gha,scope=research-paper-intelligence
-          cache-to: type=gha,mode=max,scope=research-paper-intelligence
 
-      - name: Verify Python version
-        run: |
-          docker run --rm \
-            --entrypoint python \
-            ${{ env.TEST_IMAGE }} \
-            --version
+          # Attestations are only needed for the published image.
+          provenance: false
+          sbom: false
 
-      - name: Verify project package import
-        run: |
-          docker run --rm \
-            --entrypoint python \
-            ${{ env.TEST_IMAGE }} \
-            -c "
-          import research_paper_intelligence
-          print(
-              'Package imported from:',
-              research_paper_intelligence.__file__,
-          )
-          "
+          cache-from: |
+            type=gha,scope=${{ env.DOCKER_CACHE_SCOPE }}
+          cache-to: |
+            type=gha,mode=min,scope=${{ env.DOCKER_CACHE_SCOPE }}
 
-      - name: Verify runtime dependencies
+      - name: Smoke-test Docker image
         run: |
-          docker run --rm \
+          docker run --rm -i \
             --entrypoint python \
-            ${{ env.TEST_IMAGE }} \
-            -c "
+            --env GOOGLE_API_KEY=test-google-api-key \
+            --env RPI_ENVIRONMENT=test \
+            --env RPI_LOG_LEVEL=INFO \
+            --env RPI_DEVICE=cpu \
+            --env RPI_API_RELOAD=false \
+            --env RPI_STREAMLIT_HEADLESS=true \
+            --env RPI_STREAMLIT_RUN_ON_SAVE=false \
+            "${TEST_IMAGE}" - <<'PY'
+          import sys
+
           import faiss
           import fastapi
           import numpy
           import pandas
+          import research_paper_intelligence
           import sklearn
           import streamlit
+          import torch
           import uvicorn
 
-          print('Runtime dependency imports succeeded.')
-          "
+          from research_paper_intelligence.api.app import fastapi_app
 
-      - name: Verify FastAPI application import
+          if torch.version.cuda is not None:
+              raise RuntimeError(
+                  "The Docker image contains a CUDA-enabled PyTorch build: "
+                  f"{torch.version.cuda}"
+              )
+
+          if torch.cuda.is_available():
+              raise RuntimeError(
+                  "CUDA unexpectedly reports itself as available in the "
+                  "CPU-only Docker image."
+              )
+
+          print("Python version:", sys.version)
+          print(
+              "Package location:",
+              research_paper_intelligence.__file__,
+          )
+          print("FastAPI application:", fastapi_app.title)
+          print("PyTorch version:", torch.__version__)
+          print("PyTorch CUDA build:", torch.version.cuda)
+          print("Runtime dependency imports succeeded.")
+          PY
+
+      - name: Show Docker storage usage
+        if: always()
         run: |
-          docker run --rm \
-            --entrypoint python \
-            --env GOOGLE_API_KEY=test-google-api-key \
-            --env RPI_ENVIRONMENT=test \
-            --env RPI_DEVICE=cpu \
-            ${{ env.TEST_IMAGE }} \
-            -c "
-          from research_paper_intelligence.api.app import app
+          echo "Docker storage:"
+          docker system df
 
-          print('FastAPI application:', app.title)
-          "
+          echo
+          echo "Runner filesystem:"
+          df -h
 
   publish:
     name: Publish Docker image
@@ -194,7 +223,6 @@ jobs:
       )
 
     needs:
-      - quality
       - docker
 
     runs-on: ubuntu-latest
@@ -208,20 +236,21 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Create lowercase image name
         id: image
-        shell: bash
         run: |
-          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY,,}"
-          echo "name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "name=${image_name}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Docker BuildX
-        uses: docker/setup-buildx-action@v4.2.0
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v4.5.1
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -229,7 +258,7 @@ jobs:
 
       - name: Generate Docker metadata
         id: metadata
-        uses: docker/metadata-action@v6.2.0
+        uses: docker/metadata-action@v6
         with:
           images: ${{ steps.image.outputs.name }}
 
@@ -238,7 +267,7 @@ jobs:
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix=sha-
+            type=sha,prefix=sha-,format=short
 
           labels: |
             org.opencontainers.image.title=Research Paper Intelligence
@@ -246,15 +275,31 @@ jobs:
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and publish Docker image
-        uses: docker/build-push-action@v7.3.0
+        id: publish
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
+
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
-          cache-from: type=gha,scope=research-paper-intelligence
-          cache-to: type=gha,mode=max,scope=research-paper-intelligence
+
+          cache-from: |
+            type=gha,scope=${{ env.DOCKER_CACHE_SCOPE }}
+          cache-to: |
+            type=gha,mode=max,scope=${{ env.DOCKER_CACHE_SCOPE }}
+
           provenance: mode=max
           sbom: true
+
+      - name: Add published image to job summary
+        run: |
+          {
+            echo "## Published Docker image"
+            echo
+            echo "**Image:** \`${{ steps.image.outputs.name }}\`"
+            echo
+            echo "**Digest:** \`${{ steps.publish.outputs.digest }}\`"
+          } >> "${GITHUB_STEP_SUMMARY}"
