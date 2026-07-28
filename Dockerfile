@@ -2,13 +2,12 @@
 
 FROM python:3.12-slim AS runtime
 
-# FAISS, NumPy, scikit-learn and similar numerical libraries may require
-# the OpenMP runtime.
+# Runtime dependency required by FAISS, NumPy and scikit-learn.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Pin uv rather than using the floating "latest" tag.
+# Install a pinned uv version.
 COPY --from=ghcr.io/astral-sh/uv:0.11.32 /uv /uvx /bin/
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -20,7 +19,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install dependencies in a separate cached layer.
+# Install third-party dependencies in a cacheable layer.
 COPY pyproject.toml uv.lock ./
 
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -29,7 +28,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         --no-dev \
         --no-install-project
 
-# Copy the application only after dependencies have been installed.
+# Copy the application source.
 COPY . .
 
 # Install the project itself.
@@ -38,20 +37,30 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         --locked \
         --no-dev
 
-# Do not run the application as root.
-RUN chmod +x /app/src/research_paper_intelligence/cli/prepare_runtime_data.sh \
-    && groupadd --system app \
+# Create a non-root application user.
+#
+# Only writable runtime directories need to belong to the application user.
+# The virtual environment and application source can remain root-owned because
+# the application only needs read and execute permissions for them.
+RUN groupadd --system app \
     && useradd \
         --system \
         --gid app \
         --home-dir /app \
+        --no-create-home \
         app \
+    && chmod +x \
+        /app/src/research_paper_intelligence/cli/prepare_runtime_data.sh \
     && mkdir -p \
         /app/data/raw \
         /app/data/processed \
         /app/data/artifacts \
         /app/.cache/huggingface \
-    && chown -R app:app /app
+        /app/.streamlit \
+    && chown -R app:app \
+        /app/data \
+        /app/.cache \
+        /app/.streamlit
 
 USER app
 
