@@ -21,7 +21,7 @@ REQUIRED_COLUMNS: frozenset[str] = frozenset(
 )
 
 MODERN_ARXIV_ID_PATTERN = re.compile(
-    r"^\d{4}.\d{4,5}(?:v\d+)?$"
+    r"\d{4}\.\d{4,5}(?:v\d+)?"
 )
 
 LEGACY_ARXIV_ID_PATTERN = re.compile(

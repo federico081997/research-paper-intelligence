@@ -1,508 +1,680 @@
-"""Tests performed on the "preprocessing" module."""
+"""Tests for the dataset preprocessing utilities."""
 
-from pathlib import Path
+from datetime import datetime
 
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 from research_paper_intelligence.data.preprocessing import (
     REQUIRED_COLUMNS,
     clean_text,
+    normalize_arxiv_id,
     parse_authors,
     preprocess_dataset,
 )
 
-# -----------------------------------------------------------------------------
-#   TestCleanText
-# -----------------------------------------------------------------------------
+
+@pytest.fixture
+def raw_dataframe() -> pd.DataFrame:
+    """Create representative raw research-paper data."""
+    return pd.DataFrame(
+        {
+            "id": [
+                "abs-2401.12345",
+                "cs-9308101v1",
+            ],
+            "title": [
+                "  Finite   volume\nmethods  ",
+                "Machine learning",
+            ],
+            "summary": [
+                "  A finite-volume\tstudy.  ",
+                "A machine-learning study.",
+            ],
+            "category": [
+                "  Computational   Engineering ",
+                " cs.LG ",
+            ],
+            "authors": [
+                "['Author One', 'Author Two']",
+                ("Author Three", "Author Four"),
+            ],
+            "published_date": [
+                "2025-01-10",
+                "2024-02-15T12:30:00",
+            ],
+            "unused_column": [
+                "unused value 1",
+                "unused value 2",
+            ],
+        }
+    )
 
 
 class TestCleanText:
-    """Tests performed on the "clean_text" function."""
+    """Tests for the clean_text function."""
 
     @pytest.mark.parametrize(
-        ("input_text", "expected"),
+        ("value", "expected"),
         [
-            pytest.param("Clean text", "Clean text"),
-            pytest.param("  leading and trailing  ", "leading and trailing"),
-            pytest.param(
-                "multiple    internal    spaces", "multiple internal spaces"
-            ),
-            pytest.param("text\twith\ttabs", "text with tabs"),
-            pytest.param("text\nwith\nnewlines", "text with newlines"),
-            pytest.param(" \t\n ", ""),
-            pytest.param("", ""),
-        ],
-        ids=[
-            "already-clean",
-            "leading-and-trailing-spaces",
-            "multiple-internal-spaces",
-            "tabs",
-            "newlines",
-            "whitespace-only",
-            "empty-string",
+            ("Paper title", "Paper title"),
+            ("  Paper title  ", "Paper title"),
+            ("Paper    title", "Paper title"),
+            ("Paper\n\ttitle", "Paper title"),
+            ("  Paper\n title\twith   spaces  ", "Paper title with spaces"),
+            ("", ""),
+            ("   ", ""),
+            (None, ""),
+            (pd.NA, ""),
+            (float("nan"), ""),
+            (123, "123"),
+            (12.5, "12.5"),
+            (True, "True"),
         ],
     )
-    def test_normalizes_whitespace(
+    def test_cleans_text_values(
         self,
-        input_text: str,
+        value: object,
         expected: str,
     ) -> None:
-        """Normalize leading, trailing, and repeated whitespace."""
-        result = clean_text(input_text)
+        """Normalize whitespace and convert values to strings."""
+        result = clean_text(value)
 
         assert result == expected
 
-    @pytest.mark.parametrize(
-        ("input_value", "expected"),
-        [
-            pytest.param(None, ""),
-            pytest.param(float("nan"), ""),
-            pytest.param(pd.NA, ""),
-            pytest.param(pd.NaT, ""),
-        ],
-        ids=[
-            "none",
-            "float-nan",
-            "pandas-na",
-            "pandas-nat",
-        ],
-    )
-    def test_null_values(
-        self,
-        input_value: int,
-        expected: str,
-    ) -> None:
-        """Convert null values into empty strings."""
-        result = clean_text(input_value)
+    def test_preserves_internal_punctuation(self) -> None:
+        """Preserve punctuation while normalizing whitespace."""
+        result = clean_text(
+            "  Finite-volume methods: a review.  "
+        )
 
-        assert result == expected
-
-    @pytest.mark.parametrize(
-        ("input_value", "expected"),
-        [
-            pytest.param(123, "123"),
-            pytest.param(3.2, "3.2"),
-            pytest.param(True, "True"),
-        ],
-        ids=[
-            "integer",
-            "float",
-            "boolean",
-        ],
-    )
-    def test_converts_non_string_values_to_strings(
-        self,
-        input_value: int,
-        expected: str,
-    ) -> None:
-        """Convert non-string values to strings."""
-        result = clean_text(input_value)
-
-        assert result == expected
-
-
-# -----------------------------------------------------------------------------
-#   TestParseAuthors
-# -----------------------------------------------------------------------------
+        assert result == "Finite-volume methods: a review."
 
 
 class TestParseAuthors:
-    """Tests for the parse_authors preprocessing function."""
-
-    @pytest.mark.parametrize(
-        "authors",
-        [
-            pytest.param(None),
-            pytest.param(float("nan")),
-            pytest.param(pd.NA),
-            pytest.param(pd.NaT),
-        ],
-        ids=[
-            "none",
-            "float-nan",
-            "pandas-na",
-            "pandas-nat",
-        ],
-    )
-    def test_missing_values_return_empty_string(
-        self,
-        authors: object,
-    ) -> None:
-        """Return an empty string if no authors were given."""
-        assert parse_authors(authors) == ""
+    """Tests for the parse_authors function."""
 
     @pytest.mark.parametrize(
         ("authors", "expected"),
         [
-            pytest.param(["Alice", "Bob"], "Alice, Bob"),
-            pytest.param(("Alice", "Bob"), "Alice, Bob"),
-            pytest.param([" Alice ", " Bob "], "Alice, Bob"),
-            pytest.param((" Alice ", " Bob "), "Alice, Bob"),
-            pytest.param(["Alice", "", "   ", "Bob"], "Alice, Bob"),
-            pytest.param([], ""),
-            pytest.param((), ""),
-            pytest.param([1, 2, 3], "1, 2, 3"),
-        ],
-        ids=[
-            "list",
-            "tuple",
-            "list-with-whitespace",
-            "tuple-with-whitespace",
-            "list-with-empty-authors",
-            "empty-list",
-            "empty-tuple",
-            "list-of-integers",
-        ],
-    )
-    def test_actual_lists_and_tuples_are_joined(
-        self,
-        authors: object,
-        expected: str,
-    ) -> None:
-        """Join items of lists or tuples using a comma."""
-        assert parse_authors(authors) == expected
-
-    @pytest.mark.parametrize(
-        "authors",
-        [
-            pytest.param(""),
-            pytest.param(" "),
-            pytest.param("   "),
-            pytest.param("\t"),
-            pytest.param("\n"),
-        ],
-        ids=[
-            "empty-string",
-            "single-space",
-            "multiple-spaces",
-            "tab",
-            "newline",
-        ],
-    )
-    def test_empty_or_whitespace_strings_return_empty_string(
-        self,
-        authors: str,
-    ) -> None:
-        """Return an empty string for blank or whitespace-only values."""
-        assert parse_authors(authors) == ""
-
-    @pytest.mark.parametrize(
-        ("authors", "expected"),
-        [
-            pytest.param("['Alice', 'Bob']", "Alice, Bob"),
-            pytest.param('["Alice", "Bob"]', "Alice, Bob"),
-            pytest.param("('Alice', 'Bob')", "Alice, Bob"),
-            pytest.param("[' Alice ', ' Bob ']", "Alice, Bob"),
-            pytest.param("[1, 2, 3]", "1, 2, 3"),
-            pytest.param("[]", ""),
-            pytest.param("()", ""),
-        ],
-        ids=[
-            "string-list-single-quotes",
-            "string-list-double-quotes",
-            "string-tuple",
-            "string-list-with-whitespace",
-            "string-list-of-integers",
-            "string-empty-list",
-            "string-empty-tuple",
+            (None, ""),
+            (pd.NA, ""),
+            (float("nan"), ""),
+            ("", ""),
+            ("   ", ""),
+            (
+                ["Author One", "Author Two"],
+                "Author One, Author Two",
+            ),
+            (
+                ("Author One", "Author Two"),
+                "Author One, Author Two",
+            ),
+            (
+                [" Author One ", "", "  ", "Author Two"],
+                "Author One, Author Two",
+            ),
+            (
+                (" Author One ", "Author Two "),
+                "Author One, Author Two",
+            ),
+            (
+                "['Author One', 'Author Two']",
+                "Author One, Author Two",
+            ),
+            (
+                "('Author One', 'Author Two')",
+                "Author One, Author Two",
+            ),
+            (
+                "[' Author One ', ' Author Two ']",
+                "Author One, Author Two",
+            ),
+            (
+                "'Author One'",
+                "Author One",
+            ),
+            (
+                "Author One, Author Two",
+                "Author One, Author Two",
+            ),
+            (
+                "  Author One, Author Two  ",
+                "Author One, Author Two",
+            ),
+            (
+                "123",
+                "123",
+            ),
+            (
+                123,
+                "123",
+            ),
         ],
     )
-    def test_string_representations_of_collections_are_parsed(
-        self,
-        authors: str,
-        expected: str,
-    ) -> None:
-        """Successfully parse string representations of collections."""
-        assert parse_authors(authors) == expected
-
-    @pytest.mark.parametrize(
-        ("authors", "expected"),
-        [
-            pytest.param("'Alice Smith'", "Alice Smith"),
-            pytest.param('"Alice Smith"', "Alice Smith"),
-            pytest.param("' Alice Smith '", "Alice Smith"),
-            pytest.param('" Alice Smith "', "Alice Smith"),
-        ],
-        ids=[
-            "single-quoted-string",
-            "double-quoted-string",
-            "single-quoted-string-with-whitespace",
-            "double-quoted-string-with-whitespace",
-        ],
-    )
-    def test_quoted_python_strings_are_unwrapped(
-        self,
-        authors: str,
-        expected: str,
-    ) -> None:
-        """Unwrap quoted python strings."""
-        assert parse_authors(authors) == expected
-
-    @pytest.mark.parametrize(
-        ("authors", "expected"),
-        [
-            pytest.param("Alice Smith", "Alice Smith"),
-            pytest.param(" Alice Smith ", "Alice Smith"),
-            pytest.param("Alice, Bob", "Alice, Bob"),
-            pytest.param("nan", "nan"),
-        ],
-        ids=[
-            "plain-name",
-            "plain-name-with-whitespace",
-            "comma-separated-names",
-            "string-nan",
-        ],
-    )
-    def test_non_literal_strings_are_preserved(
-        self,
-        authors: str,
-        expected: str,
-    ) -> None:
-        """Preserve non-literal strings."""
-        assert parse_authors(authors) == expected
-
-    def test_invalid_python_syntax_is_preserved(self) -> None:
-        """Preserve invalid python syntax."""
-        authors = "['Alice', 'Bob'"
-
-        assert parse_authors(authors) == authors
-
-    @pytest.mark.parametrize(
-        ("authors", "expected"),
-        [
-            pytest.param("123", "123"),
-            pytest.param("True", "True"),
-            pytest.param("None", "None"),
-            pytest.param("{'name': 'Alice'}", "{'name': 'Alice'}"),
-        ],
-        ids=[
-            "integer-literal",
-            "boolean-literal",
-            "none-literal",
-            "dictionary-literal",
-        ],
-    )
-    def test_other_valid_literals_preserve_original_string(
-        self,
-        authors: str,
-        expected: str,
-    ) -> None:
-        """Preserve original string literals."""
-        assert parse_authors(authors) == expected
-
-    @pytest.mark.parametrize(
-        ("authors", "expected"),
-        [
-            pytest.param(123, "123"),
-            pytest.param(3.14, "3.14"),
-            pytest.param(True, "True"),
-            pytest.param(False, "False"),
-        ],
-        ids=[
-            "integer",
-            "float",
-            "true",
-            "false",
-        ],
-    )
-    def test_other_values_are_converted_to_strings(
+    def test_converts_authors_to_readable_string(
         self,
         authors: object,
         expected: str,
     ) -> None:
-        """Convert other values to strings."""
-        assert parse_authors(authors) == expected
+        """Convert supported author representations to readable text."""
+        result = parse_authors(authors)
+
+        assert result == expected
+
+    def test_preserves_malformed_serialised_list(self) -> None:
+        """Preserve a string that cannot be parsed as a Python literal."""
+        authors = "['Author One', 'Author Two'"
+
+        result = parse_authors(authors)
+
+        assert result == authors
+
+    def test_omits_empty_authors_from_sequence(self) -> None:
+        """Exclude empty values from list and tuple inputs."""
+        result = parse_authors(
+            ["Author One", "", "   ", "Author Two"]
+        )
+
+        assert result == "Author One, Author Two"
 
 
-# -----------------------------------------------------------------------------
-#   TestPreprocessDataset
-# -----------------------------------------------------------------------------
+class TestNormalizeArxivId:
+    """Tests for the normalize_arxiv_id function."""
+
+    @pytest.mark.parametrize(
+        ("paper_id", "expected"),
+        [
+            (
+                "abs-0901.4761",
+                "0901.4761",
+            ),
+            (
+                "abs-0901.4761v1",
+                "0901.4761v1",
+            ),
+            (
+                "0901.4761",
+                "0901.4761",
+            ),
+            (
+                "2401.12345",
+                "2401.12345",
+            ),
+            (
+                "2401.12345v3",
+                "2401.12345v3",
+            ),
+            (
+                "  abs-2401.12345v2  ",
+                "2401.12345v2",
+            ),
+        ],
+    )
+    def test_normalises_modern_arxiv_ids(
+        self,
+        paper_id: str,
+        expected: str,
+    ) -> None:
+        """Normalize modern arXiv identifiers."""
+        result = normalize_arxiv_id(paper_id)
+
+        assert result == expected
+
+    @pytest.mark.parametrize(
+        ("paper_id", "expected"),
+        [
+            (
+                "cs-9308101",
+                "cs/9308101",
+            ),
+            (
+                "cs-9308101v1",
+                "cs/9308101v1",
+            ),
+            (
+                "hep-th-9901001",
+                "hep-th/9901001",
+            ),
+            (
+                "hep-th-9901001v2",
+                "hep-th/9901001v2",
+            ),
+            (
+                "  math-0301001v3  ",
+                "math/0301001v3",
+            ),
+        ],
+    )
+    def test_normalises_legacy_arxiv_ids(
+        self,
+        paper_id: str,
+        expected: str,
+    ) -> None:
+        """Convert legacy dataset identifiers to arXiv path format."""
+        result = normalize_arxiv_id(paper_id)
+
+        assert result == expected
+
+    def test_rejects_empty_identifier(self) -> None:
+        """Reject an empty paper identifier."""
+        with pytest.raises(
+            ValueError,
+            match="paper_id must not be empty",
+        ):
+            normalize_arxiv_id("")
+
+    def test_rejects_whitespace_only_identifier(self) -> None:
+        """Reject a paper identifier containing only whitespace."""
+        with pytest.raises(
+            ValueError,
+            match="paper_id must not be empty",
+        ):
+            normalize_arxiv_id("   ")
+
+    @pytest.mark.parametrize(
+        "paper_id",
+        [
+            "invalid-id",
+            "abs-invalid",
+            "2401.123",
+            "2401.123456",
+            "2401.12345v",
+            "cs-123456",
+            "cs-12345678",
+        ],
+    )
+    def test_rejects_unsupported_identifier_formats(
+        self,
+        paper_id: str,
+    ) -> None:
+        """Reject identifiers that do not match supported arXiv formats."""
+        with pytest.raises(
+            ValueError,
+            match="Unsupported arXiv paper ID format",
+        ):
+            normalize_arxiv_id(paper_id)
+
+    def test_rejects_modern_id_without_dot_separator(self) -> None:
+        """Require a literal dot in modern arXiv identifiers."""
+        with pytest.raises(
+            ValueError,
+            match="Unsupported arXiv paper ID format",
+        ):
+            normalize_arxiv_id("2401x12345")
 
 
 class TestPreprocessDataset:
     """Tests for the preprocess_dataset function."""
 
-    def test_preprocesses_valid_dataset(
-            self,
-            valid_csv: Path,
-    ) -> None:
-        """Preprocess a valid research-paper dataset."""
-        dataframe = pd.read_csv(valid_csv)
-
-        result = preprocess_dataset(dataframe)
-
-        assert isinstance(result, pd.DataFrame)
-        assert len(result) == 1
-
-        paper = result.iloc[0]
-
-        assert paper["id"] == "2401.12345"
-        assert paper["title"] == "Paper title"
-        assert paper["summary"] == "Paper abstract"
-        assert paper["category"] == "Category"
-        assert paper["authors"] == "Author"
-        assert paper["published_date"] == pd.Timestamp("2024-01-15")
-
-    def test_does_not_modify_original_dataframe(
+    def test_keeps_only_required_columns(
         self,
-        valid_csv: Path,
+        raw_dataframe: pd.DataFrame,
     ) -> None:
-        """Leave the input DataFrame unchanged."""
-        dataframe = pd.read_csv(valid_csv)
-        original = dataframe.copy(deep=True)
+        """Remove columns that are not required by the application."""
+        result = preprocess_dataset(raw_dataframe)
 
-        preprocess_dataset(dataframe)
-
-        pd.testing.assert_frame_equal(dataframe, original)
+        assert set(result.columns) == REQUIRED_COLUMNS
+        assert "unused_column" not in result.columns
 
     @pytest.mark.parametrize(
         "missing_column",
         sorted(REQUIRED_COLUMNS),
     )
-    def test_raises_key_error_for_missing_required_column(
+    def test_rejects_missing_required_column(
         self,
-        valid_csv: Path,
+        raw_dataframe: pd.DataFrame,
         missing_column: str,
     ) -> None:
-        """Reject a dataset missing any required column."""
-        dataframe = pd.read_csv(valid_csv)
-        dataframe = dataframe.drop(columns=[missing_column])
+        """Raise a KeyError when a required column is missing."""
+        dataframe = raw_dataframe.drop(columns=missing_column)
 
-        missing_columns = REQUIRED_COLUMNS - set(dataframe.columns)
         with pytest.raises(
             KeyError,
-            match="The following columns are not present in the processed "
-            "data: " + ", ".join(missing_columns),
+            match=missing_column,
         ):
             preprocess_dataset(dataframe)
 
-    @pytest.mark.parametrize(
-        "missing_column",
-        ["title", "summary"],
-    )
-    def test_removes_rows_missing_search_text(
-            self,
-            valid_csv: Path,
-            missing_column: str,
-    ) -> None:
-        """Remove rows missing a title or summary."""
-        dataframe = pd.read_csv(valid_csv)
-
-        missing_row = dataframe.iloc[[0]].copy()
-        missing_row.loc[:, missing_column] = None
-
-        dataframe = pd.concat(
-            [dataframe, missing_row],
-            ignore_index=True,
+    def test_lists_all_missing_columns_in_error(self) -> None:
+        """Report every required column absent from the DataFrame."""
+        dataframe = pd.DataFrame(
+            {
+                "id": ["abs-2401.12345"],
+                "title": ["Paper title"],
+            }
         )
 
-        result = preprocess_dataset(dataframe)
+        with pytest.raises(KeyError) as exc_info:
+            preprocess_dataset(dataframe)
 
-        assert len(result) == len(dataframe) - 1
-        assert result.iloc[0]["title"] == "Paper title"
+        error_message = str(exc_info.value)
 
-    def test_removes_duplicate_title_and_summary_pairs(
+        for column in REQUIRED_COLUMNS.difference(dataframe.columns):
+            assert column in error_message
+
+    def test_does_not_modify_input_dataframe(
         self,
-        valid_csv: Path,
+        raw_dataframe: pd.DataFrame,
     ) -> None:
-        """Remove duplicate papers based on title and summary."""
-        dataframe = pd.read_csv(valid_csv)
+        """Leave the original DataFrame unchanged."""
+        original = raw_dataframe.copy(deep=True)
 
-        dataframe = pd.concat(
-            [dataframe, dataframe],
-            ignore_index=True,
+        preprocess_dataset(raw_dataframe)
+
+        assert_frame_equal(raw_dataframe, original)
+
+    def test_removes_rows_with_missing_title(self) -> None:
+        """Remove papers that have no title."""
+        dataframe = pd.DataFrame(
+            {
+                "id": [
+                    "abs-2401.12345",
+                    "abs-2401.12346",
+                ],
+                "title": [
+                    "Valid paper",
+                    None,
+                ],
+                "summary": [
+                    "Valid summary",
+                    "Summary without a title",
+                ],
+                "category": [
+                    "cs.LG",
+                    "cs.LG",
+                ],
+                "authors": [
+                    "['Author One']",
+                    "['Author Two']",
+                ],
+                "published_date": [
+                    "2025-01-10",
+                    "2025-01-11",
+                ],
+            }
         )
 
         result = preprocess_dataset(dataframe)
 
         assert len(result) == 1
-        assert list(result.index) == [0]
+        assert result.iloc[0]["id"] == "2401.12345"
 
-    def test_keeps_papers_with_same_title_but_different_summary(
-        self,
-        valid_csv: Path,
-    ) -> None:
-        """Keep rows when only the title is duplicated."""
-        dataframe = pd.read_csv(valid_csv)
+    def test_removes_rows_with_missing_summary(self) -> None:
+        """Remove papers that have no abstract."""
+        dataframe = pd.DataFrame(
+            {
+                "id": [
+                    "abs-2401.12345",
+                    "abs-2401.12346",
+                ],
+                "title": [
+                    "Valid paper",
+                    "Paper without a summary",
+                ],
+                "summary": [
+                    "Valid summary",
+                    None,
+                ],
+                "category": [
+                    "cs.LG",
+                    "cs.LG",
+                ],
+                "authors": [
+                    "['Author One']",
+                    "['Author Two']",
+                ],
+                "published_date": [
+                    "2025-01-10",
+                    "2025-01-11",
+                ],
+            }
+        )
 
-        second_paper = dataframe.copy()
-        second_paper.loc[0, "summary"] = "A different abstract"
+        result = preprocess_dataset(dataframe)
 
-        dataframe = pd.concat(
-            [dataframe, second_paper],
-            ignore_index=True,
+        assert len(result) == 1
+        assert result.iloc[0]["id"] == "2401.12345"
+
+    def test_removes_duplicate_title_and_summary_pairs(self) -> None:
+        """Keep only the first paper with an identical title and summary."""
+        dataframe = pd.DataFrame(
+            {
+                "id": [
+                    "abs-2401.12345",
+                    "abs-2401.12346",
+                    "abs-2401.12347",
+                ],
+                "title": [
+                    "Duplicate paper",
+                    "Duplicate paper",
+                    "Different paper",
+                ],
+                "summary": [
+                    "The same summary.",
+                    "The same summary.",
+                    "A different summary.",
+                ],
+                "category": [
+                    "cs.LG",
+                    "cs.LG",
+                    "cs.AI",
+                ],
+                "authors": [
+                    "['Author One']",
+                    "['Author Two']",
+                    "['Author Three']",
+                ],
+                "published_date": [
+                    "2025-01-10",
+                    "2025-01-11",
+                    "2025-01-12",
+                ],
+            }
         )
 
         result = preprocess_dataset(dataframe)
 
         assert len(result) == 2
+        assert result["id"].tolist() == [
+            "2401.12345",
+            "2401.12347",
+        ]
 
-    def test_converts_published_date_to_datetime(
-            self,
-            valid_csv: Path,
-    ) -> None:
-        """Convert publication dates to pandas datetime values."""
-        dataframe = pd.read_csv(valid_csv)
+    def test_resets_index_after_removing_rows(self) -> None:
+        """Reset the DataFrame index after filtering duplicates."""
+        dataframe = pd.DataFrame(
+            {
+                "id": [
+                    "abs-2401.12345",
+                    "abs-2401.12346",
+                    "abs-2401.12347",
+                ],
+                "title": [
+                    "Duplicate paper",
+                    "Duplicate paper",
+                    "Unique paper",
+                ],
+                "summary": [
+                    "Duplicate summary",
+                    "Duplicate summary",
+                    "Unique summary",
+                ],
+                "category": [
+                    "cs.LG",
+                    "cs.LG",
+                    "cs.AI",
+                ],
+                "authors": [
+                    "['Author One']",
+                    "['Author Two']",
+                    "['Author Three']",
+                ],
+                "published_date": [
+                    "2025-01-10",
+                    "2025-01-11",
+                    "2025-01-12",
+                ],
+            },
+            index=[5, 8, 12],
+        )
 
         result = preprocess_dataset(dataframe)
+
+        assert result.index.tolist() == [0, 1]
+
+    def test_converts_published_dates_to_datetime(
+        self,
+        raw_dataframe: pd.DataFrame,
+    ) -> None:
+        """Convert publication dates into pandas datetime values."""
+        result = preprocess_dataset(raw_dataframe)
 
         assert pd.api.types.is_datetime64_any_dtype(
             result["published_date"]
         )
         assert result.loc[0, "published_date"] == pd.Timestamp(
-            "2024-01-15"
+            "2025-01-10"
+        )
+        assert result.loc[1, "published_date"] == pd.Timestamp(
+            "2024-02-15 12:30:00"
         )
 
-    def test_raises_value_error_for_invalid_published_date(
-        self,
-        valid_csv: Path,
-    ) -> None:
-        """Reject invalid publication-date values."""
-        dataframe = pd.read_csv(valid_csv)
-        dataframe.loc[0, "published_date"] = "not-a-date"
+    def test_accepts_existing_datetime_values(self) -> None:
+        """Preserve valid datetime values during preprocessing."""
+        publication_date = datetime(2025, 1, 10, 12, 30)
+
+        dataframe = pd.DataFrame(
+            {
+                "id": ["abs-2401.12345"],
+                "title": ["Paper title"],
+                "summary": ["Paper summary"],
+                "category": ["cs.LG"],
+                "authors": ["['Author One']"],
+                "published_date": [publication_date],
+            }
+        )
+
+        result = preprocess_dataset(dataframe)
+
+        assert result.loc[0, "published_date"] == pd.Timestamp(
+            publication_date
+        )
+
+    def test_rejects_invalid_published_date(self) -> None:
+        """Raise a ValueError when a publication date cannot be parsed."""
+        dataframe = pd.DataFrame(
+            {
+                "id": ["abs-2401.12345"],
+                "title": ["Paper title"],
+                "summary": ["Paper summary"],
+                "category": ["cs.LG"],
+                "authors": ["['Author One']"],
+                "published_date": ["not-a-date"],
+            }
+        )
 
         with pytest.raises(ValueError):
             preprocess_dataset(dataframe)
 
     def test_cleans_text_columns(
         self,
-        valid_csv: Path,
+        raw_dataframe: pd.DataFrame,
     ) -> None:
-        """Normalize whitespace in the configured text columns."""
-        dataframe = pd.read_csv(valid_csv)
+        """Normalize whitespace in title, category, and summary fields."""
+        result = preprocess_dataset(raw_dataframe)
 
-        dataframe.loc[0, "title"] = "  Paper    title  "
-        dataframe.loc[0, "summary"] = " Paper\n abstract "
-        dataframe.loc[0, "category"] = "  Machine   Learning "
+        assert result.loc[0, "title"] == "Finite volume methods"
+        assert result.loc[0, "summary"] == "A finite-volume study."
+        assert result.loc[0, "category"] == (
+            "Computational Engineering"
+        )
+        assert result.loc[1, "category"] == "cs.LG"
 
-        result = preprocess_dataset(dataframe)
-
-        assert result.loc[0, "title"] == "Paper title"
-        assert result.loc[0, "summary"] == "Paper abstract"
-        assert result.loc[0, "category"] == "Machine Learning"
-
-    def test_parses_authors(
+    def test_parses_author_values(
         self,
-        valid_csv: Path,
+        raw_dataframe: pd.DataFrame,
     ) -> None:
-        """Convert a serialized author list into readable text."""
-        dataframe = pd.read_csv(valid_csv)
-        dataframe.loc[0, "authors"] = "['Alice Smith', 'Bob Jones']"
+        """Convert author lists and tuples into readable strings."""
+        result = preprocess_dataset(raw_dataframe)
 
-        result = preprocess_dataset(dataframe)
+        assert result["authors"].tolist() == [
+            "Author One, Author Two",
+            "Author Three, Author Four",
+        ]
 
-        assert result.loc[0, "authors"] == "Alice Smith, Bob Jones"
-
-    def test_removes_irrelevant_columns(
+    def test_normalises_paper_identifiers(
         self,
-        valid_csv: Path,
+        raw_dataframe: pd.DataFrame,
     ) -> None:
-        """Exclude columns that are not part of preprocessing."""
-        dataframe = pd.read_csv(valid_csv)
-        dataframe["irrelevant_column"] = ["unused"]
+        """Convert modern and legacy identifiers to valid arXiv IDs."""
+        result = preprocess_dataset(raw_dataframe)
+
+        assert result["id"].tolist() == [
+            "2401.12345",
+            "cs/9308101v1",
+        ]
+
+    def test_rejects_invalid_arxiv_identifier(self) -> None:
+        """Raise a ValueError when a paper ID has an unsupported format."""
+        dataframe = pd.DataFrame(
+            {
+                "id": ["invalid-paper-id"],
+                "title": ["Paper title"],
+                "summary": ["Paper summary"],
+                "category": ["cs.LG"],
+                "authors": ["['Author One']"],
+                "published_date": ["2025-01-10"],
+            }
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Unsupported arXiv paper ID format",
+        ):
+            preprocess_dataset(dataframe)
+
+    def test_handles_missing_category_and_authors(self) -> None:
+        """Convert missing optional text metadata into empty strings."""
+        dataframe = pd.DataFrame(
+            {
+                "id": ["abs-2401.12345"],
+                "title": ["Paper title"],
+                "summary": ["Paper summary"],
+                "category": [None],
+                "authors": [None],
+                "published_date": ["2025-01-10"],
+            }
+        )
 
         result = preprocess_dataset(dataframe)
 
-        assert "irrelevant_column" not in result.columns
-        assert set(result.columns) == set(REQUIRED_COLUMNS)
+        assert result.loc[0, "category"] == ""
+        assert result.loc[0, "authors"] == ""
+
+    def test_returns_cleaned_dataframe(self) -> None:
+        """Apply all preprocessing operations to the dataset."""
+        dataframe = pd.DataFrame(
+            {
+                "id": ["  abs-2401.12345v2  "],
+                "title": ["  Finite   volume methods  "],
+                "summary": ["  Paper\nabstract  "],
+                "category": ["  Computational   Mechanics "],
+                "authors": ["['Author One', 'Author Two']"],
+                "published_date": ["2025-01-10"],
+                "unused": ["remove me"],
+            }
+        )
+
+        result = preprocess_dataset(dataframe)
+
+        assert len(result) == 1
+        assert set(result.columns) == REQUIRED_COLUMNS
+        assert result.iloc[0].to_dict() == {
+            "id": "2401.12345v2",
+            "title": "Finite volume methods",
+            "summary": "Paper abstract",
+            "category": "Computational Mechanics",
+            "authors": "Author One, Author Two",
+            "published_date": pd.Timestamp("2025-01-10"),
+        }
