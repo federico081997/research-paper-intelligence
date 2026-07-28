@@ -1,0 +1,260 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+    tags:
+      - "v*.*.*"
+
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"
+  UV_VERSION: "0.11.32"
+  TEST_IMAGE: research-paper-intelligence:test
+
+jobs:
+  quality:
+    name: Code quality and tests
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      GOOGLE_API_KEY: test-google-api-key
+
+      RPI_ENVIRONMENT: test
+      RPI_LOG_LEVEL: INFO
+      RPI_DEVICE: cpu
+      RPI_API_RELOAD: "false"
+      RPI_STREAMLIT_RUN_ON_SAVE: "false"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v9.0.0
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Verify lock file
+        run: uv lock --check
+
+      - name: Install project and development dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Check formatting
+        run: uv run ruff format --check .
+
+      - name: Run Ruff
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy src
+
+      - name: Run tests
+        run: |
+          uv run pytest \
+            --junitxml=test-results.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: pytest-results
+          path: test-results.xml
+          if-no-files-found: error
+          retention-days: 14
+
+  docker:
+    name: Build and smoke-test Docker image
+
+    needs:
+      - quality
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Create CI environment file
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          GOOGLE_API_KEY=test-google-api-key
+          RPI_ENVIRONMENT=test
+          RPI_LOG_LEVEL=INFO
+          RPI_DEVICE=cpu
+          RPI_API_RELOAD=false
+          RPI_STREAMLIT_RUN_ON_SAVE=false
+          EOF
+
+      - name: Validate Docker Compose configuration
+        run: docker compose config --quiet
+
+      - name: Set up Docker BuildX
+        uses: docker/setup-buildx-action@v4.2.0
+
+      - name: Build test image
+        uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          push: false
+          tags: ${{ env.TEST_IMAGE }}
+          cache-from: type=gha,scope=research-paper-intelligence
+          cache-to: type=gha,mode=max,scope=research-paper-intelligence
+
+      - name: Verify Python version
+        run: |
+          docker run --rm \
+            --entrypoint python \
+            ${{ env.TEST_IMAGE }} \
+            --version
+
+      - name: Verify project package import
+        run: |
+          docker run --rm \
+            --entrypoint python \
+            ${{ env.TEST_IMAGE }} \
+            -c "
+          import research_paper_intelligence
+          print(
+              'Package imported from:',
+              research_paper_intelligence.__file__,
+          )
+          "
+
+      - name: Verify runtime dependencies
+        run: |
+          docker run --rm \
+            --entrypoint python \
+            ${{ env.TEST_IMAGE }} \
+            -c "
+          import faiss
+          import fastapi
+          import numpy
+          import pandas
+          import sklearn
+          import streamlit
+          import uvicorn
+
+          print('Runtime dependency imports succeeded.')
+          "
+
+      - name: Verify FastAPI application import
+        run: |
+          docker run --rm \
+            --entrypoint python \
+            --env GOOGLE_API_KEY=test-google-api-key \
+            --env RPI_ENVIRONMENT=test \
+            --env RPI_DEVICE=cpu \
+            ${{ env.TEST_IMAGE }} \
+            -c "
+          from research_paper_intelligence.api.main import app
+
+          print('FastAPI application:', app.title)
+          "
+
+  publish:
+    name: Publish Docker image
+
+    if: >
+      github.event_name == 'push' &&
+      (
+        github.ref == 'refs/heads/main' ||
+        startsWith(github.ref, 'refs/tags/v')
+      )
+
+    needs:
+      - quality
+      - docker
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Create lowercase image name
+        id: image
+        shell: bash
+        run: |
+          IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "name=${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker BuildX
+        uses: docker/setup-buildx-action@v4.2.0
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v4.5.1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Docker metadata
+        id: metadata
+        uses: docker/metadata-action@v6.2.0
+        with:
+          images: ${{ steps.image.outputs.name }}
+
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+
+          labels: |
+            org.opencontainers.image.title=Research Paper Intelligence
+            org.opencontainers.image.description=Research paper search and agentic research assistant
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+
+      - name: Build and publish Docker image
+        uses: docker/build-push-action@v7.3.0
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.metadata.outputs.tags }}
+          labels: ${{ steps.metadata.outputs.labels }}
+          cache-from: type=gha,scope=research-paper-intelligence
+          cache-to: type=gha,mode=max,scope=research-paper-intelligence
+          provenance: mode=max
+          sbom: true
